@@ -4,6 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import cron from "node-cron";
 import jwt from "jsonwebtoken";
+import http from "http";
+import { Server } from "socket.io";
 
 import authRoutes from "./routes/auth.js";
 import chatRoutes from "./routes/chat.js";
@@ -13,31 +15,31 @@ import adminRoutes from "./routes/admin.js";
 import userRoutes from "./routes/userRoutes.js";
 import payrollRoutes from "./routes/payroll.js";
 import tutorRoutes from "./routes/tutors.js";
-import Appointment from "./models/Appointment.js";
-import BlacklistedToken from "./models/BlacklistedToken.js"; // ✅ NEW
-import { sendEmail } from "./utils/emailsender.js";
-import { Server } from "socket.io";
-import http from "http";
 import reviewRoutes from "./routes/reviews.js";
+
+import Appointment from "./models/Appointment.js";
+import BlacklistedToken from "./models/BlacklistedToken.js";
+import { sendEmail } from "./utils/emailsender.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Create HTTP server manually for socket.io
 const server = http.createServer(app);
 
-// Attach Socket.io server
+// 🔌 Socket.io Setup
 const io = new Server(server, {
-  cors: { origin: "*" },
+  cors: { origin: "*" }
 });
 
-// Middlewares
+// 🧠 Track online users using a map of Sets (multiple sockets per user)
+const onlineUsers = new Map();
+
+// 📦 Middleware
 app.use(cors());
 app.use(express.json());
 
-// API Routes
+// 📁 API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/appointment", appointmentRoutes);
@@ -48,15 +50,15 @@ app.use("/api/tutors", tutorRoutes);
 app.use("/api", payrollRoutes);
 app.use("/api/reviews", reviewRoutes);
 
-// Root route
+// ✅ Root Route
 app.get("/", (req, res) => {
   res.send("✅ EzPremium Tutors Backend is running!");
 });
 
-// Connect to MongoDB
+// 🌐 MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
+  useUnifiedTopology: true
 })
 .then(() => {
   console.log("✅ MongoDB connected");
@@ -71,7 +73,7 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error("❌ MongoDB connection error:", err.message);
 });
 
-// Cron Job: Send Appointment Reminders
+// 🔔 Cron Job to Send Session Reminders
 function startReminderCron() {
   cron.schedule("*/10 * * * *", async () => {
     console.log("⏰ Checking upcoming appointments...");
@@ -94,7 +96,6 @@ function startReminderCron() {
             <p><strong>Time:</strong> ${appt.time}</p>
           `;
           await sendEmail(appt.tutorEmail, subject, html);
-
           appt.reminderSent = true;
           await appt.save();
           console.log(`✅ Reminder sent to tutor ${appt.tutorName}`);
@@ -106,12 +107,26 @@ function startReminderCron() {
   });
 }
 
-// --- SOCKET.IO EVENTS (REALTIME CHAT) ---
+// 📡 SOCKET.IO EVENTS
 io.on("connection", (socket) => {
-  console.log("🔵 New socket connected:", socket.id);
+  const userEmail = socket.handshake.query?.email;
+
+  if (userEmail) {
+    if (!onlineUsers.has(userEmail)) {
+      onlineUsers.set(userEmail, new Set());
+    }
+    onlineUsers.get(userEmail).add(socket.id);
+    io.emit("user-status", { email: userEmail, online: true });
+    console.log(`🟢 ${userEmail} connected (${socket.id})`);
+  }
 
   socket.on("sendMessage", ({ senderId, receiverId, content }) => {
-    io.emit("receiveMessage", { senderId, receiverId, content, createdAt: new Date() });
+    io.emit("receiveMessage", {
+      senderId,
+      receiverId,
+      content,
+      createdAt: new Date()
+    });
   });
 
   socket.on("typing", ({ senderId, receiverId }) => {
@@ -123,6 +138,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("🔴 Socket disconnected:", socket.id);
+    if (userEmail && onlineUsers.has(userEmail)) {
+      const socketSet = onlineUsers.get(userEmail);
+      socketSet.delete(socket.id);
+      if (socketSet.size === 0) {
+        onlineUsers.delete(userEmail);
+        io.emit("user-status", { email: userEmail, online: false });
+        console.log(`🔴 ${userEmail} fully disconnected`);
+      } else {
+        console.log(`🔴 ${userEmail} closed tab (${socket.id})`);
+      }
+    }
   });
 });
+

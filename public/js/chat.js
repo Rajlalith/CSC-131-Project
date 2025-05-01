@@ -1,5 +1,9 @@
-// File: chat.js
-const socket = io("http://localhost:5000");
+const currentUser = localStorage.getItem("userEmail");
+const token = localStorage.getItem("token");
+
+const socket = io("http://localhost:5000", {
+  query: { email: currentUser }
+});
 
 const userList = document.getElementById("userList");
 const searchInput = document.getElementById("searchInput");
@@ -7,11 +11,9 @@ const chatHeader = document.getElementById("chatHeader");
 const messagesDiv = document.getElementById("messages");
 const messageInput = document.getElementById("messageInput");
 
-const currentUser = localStorage.getItem("userEmail");
-const token = localStorage.getItem("token");
 let selectedUser = sessionStorage.getItem("chat_selected_user") || null;
 let typingTimeout;
-
+const onlineUsers = new Set();
 const unreadMessages = {};
 const notificationSound = new Audio("https://www.soundjay.com/button/beep-07.wav");
 
@@ -21,7 +23,28 @@ if (!token || !currentUser) {
   window.location.href = redirect;
 }
 
-// Load users
+socket.on("updateOnlineUsers", (users) => {
+  onlineUsers.clear();
+  users.forEach((u) => onlineUsers.add(u));
+  updateUserStatuses();
+});
+
+function updateUserStatuses() {
+  document.querySelectorAll(".user-item").forEach((item) => {
+    const email = item.dataset.email;
+    const statusEl = item.querySelector(".status");
+    const isOnline = onlineUsers.has(email);
+    statusEl.textContent = isOnline ? "Online" : "Offline";
+    statusEl.style.color = isOnline ? "green" : "gray";
+  });
+
+  if (selectedUser) {
+    const online = onlineUsers.has(selectedUser);
+    const nameEl = chatHeader.querySelector("strong")?.textContent || "";
+    chatHeader.innerHTML = `<strong>${nameEl}</strong> <span style="color:${online ? "green" : "gray"};font-size:0.85rem;">${online ? "Online" : "Offline"}</span>`;
+  }
+}
+
 async function loadUsers() {
   const isStudent = window.location.pathname.includes("chat-student.html");
   const apiUrl = isStudent
@@ -44,6 +67,19 @@ async function loadUsers() {
         item.style.display = item.textContent.toLowerCase().includes(keyword) ? "" : "none";
       });
     });
+
+    // ✅ Restore previously selected user after list loads
+    if (selectedUser) {
+      const tryRestore = setInterval(() => {
+        const selectedDiv = document.querySelector(`.user-item[data-email="${selectedUser}"]`);
+        if (selectedDiv) {
+          selectedDiv.click();
+          clearInterval(tryRestore);
+        }
+      }, 100);
+      setTimeout(() => clearInterval(tryRestore), 2000); // stop after 2s
+    }
+
   } catch (err) {
     userList.innerHTML = `<p style="padding:1rem;">❌ ${err.message}</p>`;
   }
@@ -58,12 +94,14 @@ function displayUserList(users) {
     div.dataset.email = user.email;
     div.innerHTML = `
       <strong>${user.name}</strong><br>
+      <small class="status">${onlineUsers.has(user.email) ? "Online" : "Offline"}</small><br>
       <small style="color:#555;">${lastMsg || "No messages yet"}</small>
     `;
     div.onclick = () => {
       selectedUser = user.email;
       sessionStorage.setItem("chat_selected_user", selectedUser);
-      chatHeader.innerHTML = `<strong>Chatting with ${user.name}</strong> <span style="color:green;font-size:0.85rem;">Online</span>`;
+      const online = onlineUsers.has(user.email);
+      chatHeader.innerHTML = `<strong>${user.name}</strong> <span style="color:${online ? "green" : "gray"};font-size:0.85rem;">${online ? "Online" : "Offline"}</span>`;
       unreadMessages[selectedUser] = 0;
       messagesDiv.innerHTML = "";
       highlightSelected(div);
@@ -71,7 +109,6 @@ function displayUserList(users) {
       refreshUserList();
     };
     userList.appendChild(div);
-    if (user.email === selectedUser) div.click();
   });
 }
 
@@ -92,6 +129,13 @@ async function fetchLastMessage(user1, user2) {
   }
 }
 
+function appendDateDivider(label) {
+  const div = document.createElement("div");
+  div.textContent = label;
+  div.style = "text-align:center;color:#777;font-size:0.8rem;margin:10px 0;";
+  messagesDiv.appendChild(div);
+}
+
 function formatDateLabel(dateStr) {
   const date = new Date(dateStr);
   const today = new Date();
@@ -101,13 +145,6 @@ function formatDateLabel(dateStr) {
   if (date.toDateString() === today.toDateString()) return "Today";
   if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
   return date.toLocaleDateString();
-}
-
-function appendDateDivider(label) {
-  const div = document.createElement("div");
-  div.textContent = label;
-  div.style = "text-align:center;color:#777;font-size:0.8rem;margin:10px 0;";
-  messagesDiv.appendChild(div);
 }
 
 async function loadOldMessages() {
@@ -196,8 +233,10 @@ function refreshUserList() {
     const email = item.dataset.email;
     const name = item.querySelector("strong")?.innerText || "";
     const lastMsg = await fetchLastMessage(currentUser, email);
+    const status = onlineUsers.has(email) ? "Online" : "Offline";
     item.innerHTML = `
       <strong>${name}</strong><br>
+      <small class="status" style="color:${status === "Online" ? "green" : "gray"};">${status}</small><br>
       <small style="color:#555;">${lastMsg || "No messages yet"}</small>
     `;
   });

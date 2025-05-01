@@ -62,7 +62,7 @@ async function fetchTutors() {
 function startChat(id, name) {
   receiverId = id;
   receiverName = name;
-  chatHeader.textContent = `Chatting with ${name}`;
+  chatHeader.textContent = `${name}`;
   loadMessages();
 }
 

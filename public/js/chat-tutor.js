@@ -6,7 +6,7 @@ const chatMessages = document.getElementById("chatMessages");
 const messageInput = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 
-const currentUser = localStorage.getItem("userEmail"); // current tutor's email
+const currentUser = localStorage.getItem("userEmail");
 const token = localStorage.getItem("token");
 let selectedUser = sessionStorage.getItem("chat_selected_user") || null;
 
@@ -17,7 +17,6 @@ if (!token) {
   window.location.href = "login-tutor.html";
 }
 
-// Load student list
 async function fetchStudents() {
   try {
     const res = await fetch("http://localhost:5000/api/users", {
@@ -28,6 +27,8 @@ async function fetchStudents() {
     const users = await res.json();
 
     usersList.innerHTML = '<div class="sidebar-header">Students</div>';
+
+    const studentMap = {};
 
     users
       .filter(user => user.role === "student")
@@ -50,15 +51,21 @@ async function fetchStudents() {
         };
         usersList.appendChild(div);
 
-        if (user.email === selectedUser) div.click(); // auto-select last chat
+        studentMap[user.email] = div;
       });
+
+    // ✅ Try to auto-restore chat
+    if (selectedUser && studentMap[selectedUser]) {
+      setTimeout(() => {
+        studentMap[selectedUser].click();
+      }, 300);
+    }
   } catch (err) {
     console.error("❌ Failed to load users:", err.message);
     usersList.innerHTML = `<p style="padding:1rem;">❌ Failed to load users.</p>`;
   }
 }
 
-// Load full conversation from backend
 async function loadMessages() {
   try {
     const res = await fetch(`http://localhost:5000/api/chat/conversations/${currentUser}/${selectedUser}`, {
@@ -79,13 +86,11 @@ async function loadMessages() {
   }
 }
 
-// Send and store message
 async function sendMessage() {
   const content = messageInput.value.trim();
   if (!selectedUser) return alert("❗ Please select a user first.");
   if (!content) return;
 
-  // Emit through socket
   socket.emit("sendMessage", {
     senderId: currentUser,
     receiverId: selectedUser,
@@ -93,7 +98,6 @@ async function sendMessage() {
     createdAt: new Date()
   });
 
-  // Save in MongoDB
   try {
     await fetch("http://localhost:5000/api/chat/send", {
       method: "POST",
@@ -110,7 +114,6 @@ async function sendMessage() {
   messageInput.value = "";
 }
 
-// Add message bubble
 function appendMessage(msg, isSender) {
   const div = document.createElement("div");
   div.className = `message ${isSender ? "sent" : "received"}`;
@@ -118,12 +121,10 @@ function appendMessage(msg, isSender) {
   chatMessages.appendChild(div);
 }
 
-// Scroll down
 function scrollToBottom() {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// ENTER to send
 messageInput.addEventListener("keypress", e => {
   if (e.key === "Enter") {
     e.preventDefault();
@@ -131,10 +132,8 @@ messageInput.addEventListener("keypress", e => {
   }
 });
 
-// Button click to send
 sendBtn.onclick = sendMessage;
 
-// Handle receiving message
 socket.on("receiveMessage", (msg) => {
   if (msg.senderId === selectedUser || msg.receiverId === selectedUser) {
     appendMessage(msg, msg.senderId === currentUser);
@@ -143,7 +142,6 @@ socket.on("receiveMessage", (msg) => {
   }
 });
 
-// Start
 fetchStudents();
 
 

@@ -179,7 +179,7 @@
   <div class="user-list-sidebar">
     <div class="user-controls">
       <button onclick="window.location.href='tutor-dashboard.html'">← Dashboard</button>
-      <button onclick="logout()">Logout</button>
+      <button onclick="logoutUser()">Logout</button>
     </div>
     <div class="search-bar">
       <input type="text" id="searchInput" placeholder="Search students...">
@@ -200,13 +200,7 @@
 
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script src="js/chat.js"></script>
-  <script>
-    function logout() {
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.href = "login-tutor.html";
-    }
-  </script>
+  <script src="js/logout.js"></script>
 </body>
 </html>
 
