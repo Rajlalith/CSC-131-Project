@@ -2,125 +2,128 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Submit Your Review - EzPremium Tutors</title>
+  <title>Leave a Review - EzPremium Tutors</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f1f1f1;
+      background: linear-gradient(135deg, #e0f7fa, #ffffff);
       display: flex;
-      justify-content: center;
       align-items: center;
-      min-height: 100vh;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
-    .container {
-      background: #fff;
+    .review-box {
+      background: white;
       padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 90%;
       max-width: 500px;
-      width: 100%;
     }
-    h2 {
+    .review-box h2 {
       margin-top: 0;
-      color: #333;
+      color: #00796b;
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
     }
     label {
-      font-weight: bold;
       display: block;
-      margin-top: 1rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
     }
     select, textarea {
       width: 100%;
       padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      margin-top: 5px;
       font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
     button {
-      margin-top: 1.5rem;
-      background: #28a745;
+      background-color: #00796b;
       color: white;
-      padding: 0.6rem 1.2rem;
       border: none;
-      border-radius: 5px;
+      padding: 0.7rem 1.5rem;
       font-size: 1rem;
-      font-weight: bold;
+      border-radius: 6px;
       cursor: pointer;
+      font-weight: bold;
     }
-    #status {
+    .message {
       margin-top: 1rem;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Review Your Tutor</h2>
+  <div class="review-box">
+    <h2>Leave a Review</h2>
     <form id="reviewForm">
-      <input type="hidden" id="tutorEmail" />
-      <input type="hidden" id="studentEmail" />
-      <input type="hidden" id="sessionId" />
+      <div class="form-group">
+        <label for="rating">Rating</label>
+        <select id="rating" required>
+          <option value="">Choose...</option>
+          <option value="5">⭐⭐⭐⭐⭐ - Excellent</option>
+          <option value="4">⭐⭐⭐⭐ - Very Good</option>
+          <option value="3">⭐⭐⭐ - Good</option>
+          <option value="2">⭐⭐ - Fair</option>
+          <option value="1">⭐ - Poor</option>
+        </select>
+      </div>
 
-      <label for="rating">Rating (1–5 stars):</label>
-      <select id="rating" required>
-        <option value="">-- Select --</option>
-        <option value="5">5 - Excellent</option>
-        <option value="4">4 - Good</option>
-        <option value="3">3 - Okay</option>
-        <option value="2">2 - Poor</option>
-        <option value="1">1 - Very Bad</option>
-      </select>
-
-      <label for="comment">Comment (optional):</label>
-      <textarea id="comment" rows="5" placeholder="Write your thoughts here..."></textarea>
+      <div class="form-group">
+        <label for="comment">Comments (optional)</label>
+        <textarea id="comment" rows="4" placeholder="Share your experience..."></textarea>
+      </div>
 
       <button type="submit">Submit Review</button>
-      <div id="status"></div>
+      <div id="message" class="message"></div>
     </form>
   </div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const tutorEmail = urlParams.get("tutor");
-    const studentEmail = urlParams.get("student");
-    const sessionId = urlParams.get("sessionId");
-
-    document.getElementById("tutorEmail").value = tutorEmail;
-    document.getElementById("studentEmail").value = studentEmail;
-    document.getElementById("sessionId").value = sessionId;
+    const params = new URLSearchParams(window.location.search);
+    const tutorEmail = params.get("tutorEmail");
+    const studentEmail = params.get("studentEmail");
+    const sessionId = params.get("sessionId");
 
     const form = document.getElementById("reviewForm");
-    const statusBox = document.getElementById("status");
+    const message = document.getElementById("message");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const payload = {
-        tutorEmail,
-        studentEmail,
-        sessionId,
-        rating: parseInt(document.getElementById("rating").value),
-        comment: document.getElementById("comment").value
-      };
+      const rating = parseInt(document.getElementById("rating").value);
+      const comment = document.getElementById("comment").value;
+
+      if (!tutorEmail || !studentEmail || !sessionId || !rating) {
+        message.textContent = "Missing required data from session link.";
+        return;
+      }
 
       try {
-        const res = await fetch("/api/reviews", {
+        const res = await fetch("/reviews", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ tutorEmail, studentEmail, sessionId, rating, comment })
         });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Submission failed");
-        }
+        const data = await res.json();
 
-        statusBox.innerHTML = `<p style="color: green;">✅ Review submitted successfully. Thank you!</p>`;
-        form.reset();
+        if (res.ok) {
+          message.style.color = "green";
+          message.textContent = "Thank you! Your review has been submitted.";
+          form.reset();
+        } else {
+          message.style.color = "red";
+          message.textContent = data.message || "Failed to submit review.";
+        }
       } catch (err) {
-        console.error("❌ Review error:", err);
-        statusBox.innerHTML = `<p style="color: red;">❌ ${err.message}</p>`;
+        console.error(err);
+        message.style.color = "red";
+        message.textContent = "Server error. Please try again later.";
       }
     });
   </script>
