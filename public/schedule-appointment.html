@@ -43,6 +43,9 @@
       border-radius: 6px;
       font-size: 1rem;
     }
+    select[multiple] {
+      height: 100px;
+    }
     button {
       background-color: #f57c00;
       color: white;
@@ -75,13 +78,9 @@
       <option value="">-- Choose a Tutor --</option>
     </select>
 
-    <label for="subject">Subject</label>
-    <select id="subject" required>
-      <option value="">-- Choose a Subject --</option>
-      <option value="Math">Math</option>
-      <option value="Science">Science</option>
-      <option value="English">English</option>
-      <option value="History">History</option>
+    <label for="subject">Subject(s)</label>
+    <select id="subject" multiple required>
+      <!-- Options will populate dynamically -->
     </select>
 
     <label for="date">Date</label>
@@ -98,7 +97,9 @@
 
 <script>
   const tutorSelect = document.getElementById('tutor');
+  const subjectSelect = document.getElementById('subject');
   const tutorEmails = {};
+  const tutorSubjects = {};
 
   async function loadTutors() {
     try {
@@ -111,17 +112,36 @@
         opt.value = tutor.name;
         opt.textContent = tutor.name;
         tutorSelect.appendChild(opt);
+
         tutorEmails[tutor.name] = tutor.email;
+        tutorSubjects[tutor.name] = tutor.subjects || [];
       });
     } catch (err) {
-      console.error("Failed to load tutors:", err.message);
+      console.error("❌ Failed to load tutors:", err.message);
     }
   }
 
+  tutorSelect.addEventListener("change", () => {
+    const selectedTutor = tutorSelect.value;
+    subjectSelect.innerHTML = '';
+
+    if (selectedTutor && tutorSubjects[selectedTutor]) {
+      tutorSubjects[selectedTutor].forEach(subject => {
+        const opt = document.createElement("option");
+        opt.value = subject;
+        opt.textContent = subject;
+        subjectSelect.appendChild(opt);
+      });
+    }
+  });
+
   loadTutors();
 
-  const storedName = localStorage.getItem('userName');
-  document.getElementById('studentName').value = storedName || '';
+  // Prefill student name and email from localStorage
+  const storedName = localStorage.getItem('userName') || '';
+  const storedEmail = localStorage.getItem('userEmail') || '';
+
+  document.getElementById('studentName').value = storedName;
 
   const form = document.getElementById('bookingForm');
   const result = document.getElementById('bookingResult');
@@ -131,22 +151,25 @@
 
     const studentName = document.getElementById('studentName').value.trim();
     const tutor = document.getElementById('tutor').value;
-    const subject = document.getElementById('subject').value;
+    const selectedSubjects = Array.from(subjectSelect.selectedOptions).map(opt => opt.value);
     const date = document.getElementById('date').value;
     const time = document.getElementById('time').value;
 
-    if (studentName && tutor && subject && date && time) {
+    if (studentName && tutor && selectedSubjects.length && date && time && storedEmail) {
       try {
+        console.log("📧 Student email being sent:", storedEmail); // ✅ Debug check
+
         const res = await fetch("http://localhost:5000/api/appointment/book", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             studentName,
+            studentEmail: storedEmail, // ✅ Make sure this is not null
             tutorName: tutor,
             tutorEmail: tutorEmails[tutor] || "default@example.com",
             date,
             time,
-            notes: `Subject: ${subject}`
+            notes: `Subjects: ${selectedSubjects.join(", ")}`
           })
         });
 
@@ -154,14 +177,13 @@
         if (!res.ok) throw new Error(data.message);
 
         result.style.color = "green";
-        result.innerHTML = `✅ <strong>${studentName}</strong>, your session with <strong>${tutor}</strong> for <strong>${subject}</strong> on <strong>${date}</strong> at <strong>${time}</strong> is booked.`;
+        result.innerHTML = `✅ <strong>${studentName}</strong>, your session with <strong>${tutor}</strong> for <strong>${selectedSubjects.join(", ")}</strong> on <strong>${date}</strong> at <strong>${time}</strong> is booked.`;
 
         form.reset();
 
         setTimeout(() => {
           window.location.href = "student-schedule.html";
         }, 1500);
-
       } catch (error) {
         result.style.color = "red";
         result.innerHTML = `❌ Error: ${error.message}`;
@@ -169,6 +191,7 @@
     } else {
       result.style.color = "red";
       result.textContent = "Please complete all fields.";
+      if (!storedEmail) console.warn("⚠️ No studentEmail in localStorage!");
     }
   });
 </script>

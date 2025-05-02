@@ -6,12 +6,13 @@ const router = express.Router();
 // 💬 Send a message
 router.post("/send", async (req, res) => {
   try {
-    const { sender, receiver, content } = req.body;
+    const { sender, receiver, content, type } = req.body;
 
     const newMsg = new Message({
       senderId: sender,
       receiverId: receiver,
       content,
+      type: type || "text"
     });
 
     await newMsg.save();
@@ -57,4 +58,29 @@ router.get("/last", async (req, res) => {
   }
 });
 
+// ✏️ Edit message
+router.put("/edit/:id", async (req, res) => {
+  try {
+    const updated = await Message.findByIdAndUpdate(
+      req.params.id,
+      { content: req.body.content },
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ❌ Delete message
+router.delete("/delete/:id", async (req, res) => {
+  try {
+    await Message.findByIdAndDelete(req.params.id);
+    res.json({ message: "Deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
+

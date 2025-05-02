@@ -5,6 +5,7 @@
   <title>Student Chat - EzPremium Tutors</title>
   <link rel="stylesheet" href="styles.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
   <style>
     body {
       margin: 0;
@@ -115,6 +116,25 @@
       border-radius: 10px;
       clear: both;
       word-wrap: break-word;
+      position: relative;
+    }
+    .message img {
+      max-width: 200px;
+      border-radius: 8px;
+    }
+    .message .actions {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      display: flex;
+      gap: 6px;
+    }
+    .message .actions button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: #444;
     }
     .sent {
       background-color: #d1e7dd;
@@ -128,49 +148,60 @@
     }
     .send-bar {
       display: flex;
+      flex-direction: column;
       padding: 1rem;
       border-top: 1px solid #ccc;
       background: white;
     }
-    .send-bar input {
+    .preview-box {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: #f1f1f1;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      color: #333;
+    }
+    .clear-btn {
+      background: transparent;
+      border: none;
+      color: #d00;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .send-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .send-controls input[type="text"] {
       flex-grow: 1;
       padding: 0.5rem;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
-    .send-bar button {
+    .send-controls button {
       padding: 0.5rem 1rem;
-      margin-left: 0.5rem;
       background-color: #f57c00;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
+    #imageInput, #fileInput {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div class="sidebar-navigation">
-    <a href="student-dashboard.html">
-      <img src="https://img.icons8.com/ios-filled/50/home.png" alt="Home" />
-      <span>Home</span>
-    </a>
-    <a href="chat-student.html">
-      <img src="https://img.icons8.com/ios-filled/50/topic.png" alt="Messages" />
-      <span><strong>Messages</strong></span>
-    </a>
-    <a href="student-subjects.html">
-      <img src="https://img.icons8.com/ios-filled/50/book.png" alt="Subjects" />
-      <span>Subjects</span>
-    </a>
-    <a href="student-session-history.html">
-      <img src="https://img.icons8.com/ios-filled/50/clock--v1.png" alt="History" />
-      <span>History</span>
-    </a>
-    <a href="student-schedule.html">
-      <img src="https://img.icons8.com/ios-filled/50/planner.png" alt="Schedule" />
-      <span>Schedule</span>
-    </a>
+    <a href="student-dashboard.html"><img src="https://img.icons8.com/ios-filled/50/home.png" alt="Home" /><span>Home</span></a>
+    <a href="chat-student.html"><img src="https://img.icons8.com/ios-filled/50/topic.png" alt="Messages" /><span><strong>Messages</strong></span></a>
+    <a href="student-subjects.html"><img src="https://img.icons8.com/ios-filled/50/book.png" alt="Subjects" /><span>Subjects</span></a>
+    <a href="student-session-history.html"><img src="https://img.icons8.com/ios-filled/50/clock--v1.png" alt="History" /><span>History</span></a>
+    <a href="student-schedule.html"><img src="https://img.icons8.com/ios-filled/50/planner.png" alt="Schedule" /><span>Schedule</span></a>
   </div>
 
   <div class="user-list-sidebar">
@@ -181,18 +212,30 @@
     <div class="search-bar">
       <input type="text" id="searchInput" placeholder="Search tutors...">
     </div>
-    <div class="user-list" id="userList">
-      Loading tutors...
-    </div>
+    <div class="user-list" id="userList">Loading tutors...</div>
   </div>
 
   <div class="chat-area">
     <div class="chat-header" id="chatHeader">Select a tutor</div>
     <div class="messages" id="messages"></div>
+
     <div class="send-bar">
-      <input type="text" id="messageInput" placeholder="Type a message..." />
-      <button onclick="sendMessage()">Send</button>
+      <div id="filePreview" class="preview-box">
+        <span id="previewText"></span>
+        <button class="clear-btn" onclick="clearPreview()">❌</button>
+      </div>
+      <div class="send-controls">
+        <input type="text" id="messageInput" placeholder="Type a message..." />
+        <button onclick="toggleEmojiPicker()">😄</button>
+        <button onclick="document.getElementById('imageInput').click()">📷</button>
+        <button onclick="document.getElementById('fileInput').click()">📎</button>
+        <button onclick="sendMessage()">Send</button>
+      </div>
     </div>
+
+    <input type="file" id="imageInput" accept="image/*" />
+    <input type="file" id="fileInput" />
+    <emoji-picker id="emojiPicker" style="width:100%; display:none;"></emoji-picker>
   </div>
 
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
@@ -200,4 +243,3 @@
   <script src="js/logout.js"></script>
 </body>
 </html>
-

@@ -6,15 +6,20 @@ import { generateReviewEmailHtml } from "../utils/reviewTemplate.js";
 
 const router = express.Router();
 
-// 📬 Book a new appointment
+// 📬 Book a new appointment (emails to tutor + student)
 router.post("/book", async (req, res) => {
-  const { studentName, tutorName, date, time, notes, tutorEmail } = req.body;
+  const { studentName, studentEmail, tutorName, date, time, notes, tutorEmail } = req.body;
 
   try {
+    if (!studentEmail) {
+      return res.status(400).json({ message: "Missing studentEmail in request" });
+    }
+
     const zoomLink = `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}?pwd=${Math.random().toString(36).substring(2, 10)}`;
 
     const newAppointment = new Appointment({
       studentName,
+      studentEmail,
       tutorName,
       date,
       time,
@@ -26,8 +31,9 @@ router.post("/book", async (req, res) => {
 
     await newAppointment.save();
 
-    const subject = "📬 New Tutoring Appointment - EzPremium Tutors";
-    const html = `
+    // ✅ Send email to tutor
+    const tutorSubject = "📬 New Tutoring Appointment - EzPremium Tutors";
+    const tutorHtml = `
       <h2>New Appointment Details</h2>
       <p><strong>Student:</strong> ${studentName}</p>
       <p><strong>Date:</strong> ${date}</p>
@@ -35,11 +41,30 @@ router.post("/book", async (req, res) => {
       <p><strong>Notes:</strong> ${notes || "None"}</p>
       <p><strong>Zoom Link:</strong> <a href="${zoomLink}">${zoomLink}</a></p>
     `;
+    console.log("📨 Sending tutor email to:", tutorEmail);
+    await sendEmail(tutorEmail, tutorSubject, tutorHtml);
 
-    await sendEmail(tutorEmail, subject, html);
+    // ✅ Send email to student
+    const studentSubject = "📬 Your Tutoring Appointment is Confirmed";
+    const studentHtml = `
+      <h2>Your Appointment is Confirmed</h2>
+      <p><strong>Tutor:</strong> ${tutorName}</p>
+      <p><strong>Date:</strong> ${date}</p>
+      <p><strong>Time:</strong> ${time}</p>
+      <p><strong>Notes:</strong> ${notes || "None"}</p>
+      <p><strong>Zoom Link:</strong> <a href="${zoomLink}">${zoomLink}</a></p>
+    `;
+    console.log("📨 Sending student email to:", studentEmail);
 
-    res.status(200).json({ message: "Appointment booked and email sent!", zoomLink });
+    try {
+      await sendEmail(studentEmail, studentSubject, studentHtml);
+    } catch (emailErr) {
+      console.error("❌ Failed to send confirmation to student:", emailErr.message);
+    }
+
+    res.status(200).json({ message: "Appointment booked. Emails sent to tutor and student!", zoomLink });
   } catch (err) {
+    console.error("❌ Booking failed:", err.message);
     res.status(500).json({ message: "Failed to book appointment", error: err.message });
   }
 });
@@ -48,15 +73,11 @@ router.post("/book", async (req, res) => {
 router.post("/complete/:id", protect, async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
-
-    if (!appointment) {
-      return res.status(404).json({ message: "Appointment not found" });
-    }
+    if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
     appointment.status = "completed";
     await appointment.save();
 
-    // Send review email to student
     const studentEmail = appointment.studentEmail;
     const tutorEmail = appointment.tutorEmail;
     const sessionId = appointment._id;
@@ -123,7 +144,7 @@ router.get("/upcoming", protect, async (req, res) => {
   }
 });
 
-// All appointments for a student
+// 📋 All appointments for a student
 router.get("/student/:name", async (req, res) => {
   try {
     const appointments = await Appointment.find({ studentName: req.params.name }).sort({ date: -1, time: -1 });
@@ -133,11 +154,25 @@ router.get("/student/:name", async (req, res) => {
   }
 });
 
-// ❌ Cancel (delete) an appointment
+// ❌ Cancel appointment
 router.delete("/cancel/:id", protect, async (req, res) => {
   try {
-    await Appointment.findByIdAndDelete(req.params.id);
-    res.json({ message: "Appointment canceled successfully." });
+    const appointment = await Appointment.findByIdAndDelete(req.params.id);
+    if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+
+    const subject = "❌ Tutoring Session Cancelled";
+    const html = `
+      <h2>Session Cancelled</h2>
+      <p><strong>Student:</strong> ${appointment.studentName}</p>
+      <p><strong>Tutor:</strong> ${appointment.tutorName}</p>
+      <p><strong>Date:</strong> ${appointment.date}</p>
+      <p><strong>Time:</strong> ${appointment.time}</p>
+      <p>This tutoring session has been cancelled by the student.</p>
+    `;
+
+    await sendEmail(appointment.tutorEmail, subject, html);
+
+    res.json({ message: "Appointment cancelled and tutor notified." });
   } catch (err) {
     res.status(500).json({ message: "Failed to cancel appointment", error: err.message });
   }

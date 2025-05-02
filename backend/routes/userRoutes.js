@@ -1,6 +1,6 @@
 import express from "express";
 import User from "../models/User.js";
-import { protect } from "../middleware/auth.js"; // ✅ Add protect
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -101,7 +101,8 @@ router.put("/students/update", async (req, res) => {
 // 📋 Get all tutors (for dropdown)
 router.get("/tutors", async (req, res) => {
   try {
-    const tutors = await User.find({ role: "tutor" }).select("name email");
+    // ✅ Include subjects so frontend can populate subject dropdown
+    const tutors = await User.find({ role: "tutor" }).select("name email subjects");
     res.json(tutors);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -109,4 +110,3 @@ router.get("/tutors", async (req, res) => {
 });
 
 export default router;
-
