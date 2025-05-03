@@ -4,7 +4,7 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
-// 🗂️ Get all appointments
+// Get all appointments
 router.get("/appointments", async (req, res) => {
   try {
     const appointments = await Appointment.find({});
@@ -14,7 +14,7 @@ router.get("/appointments", async (req, res) => {
   }
 });
 
-// 👥 Get all users
+// Get all users
 router.get("/users", async (req, res) => {
   try {
     const users = await User.find({});
@@ -24,7 +24,7 @@ router.get("/users", async (req, res) => {
   }
 });
 
-// ❌ Delete user by ID
+// Delete user by ID
 router.delete("/users/:id", async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
@@ -34,7 +34,7 @@ router.delete("/users/:id", async (req, res) => {
   }
 });
 
-// 📊 Admin analytics
+// Admin analytics
 router.get("/analytics", async (req, res) => {
   try {
     const totalStudents = await User.countDocuments({ role: "student" });

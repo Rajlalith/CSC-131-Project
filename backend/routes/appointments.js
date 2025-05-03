@@ -6,16 +6,14 @@ import { generateReviewEmailHtml } from "../utils/reviewTemplate.js";
 
 const router = express.Router();
 
-// 📬 Book a new appointment (emails to tutor + student)
+// 📬 Book a new appointment
 router.post("/book", async (req, res) => {
   const { studentName, studentEmail, tutorName, date, time, notes, tutorEmail } = req.body;
 
   try {
-    if (!studentEmail) {
-      return res.status(400).json({ message: "Missing studentEmail in request" });
-    }
+    if (!studentEmail) return res.status(400).json({ message: "Missing studentEmail" });
 
-    const zoomLink = `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}?pwd=${Math.random().toString(36).substring(2, 10)}`;
+    const zoomLink = `https://zoom.us/j/${Math.floor(Math.random() * 1e9)}?pwd=${Math.random().toString(36).substring(2, 10)}`;
 
     const newAppointment = new Appointment({
       studentName,
@@ -31,7 +29,6 @@ router.post("/book", async (req, res) => {
 
     await newAppointment.save();
 
-    // ✅ Email to tutor
     const tutorHtml = `
       <h2>New Appointment Details</h2>
       <p><strong>Student:</strong> ${studentName}</p>
@@ -42,7 +39,6 @@ router.post("/book", async (req, res) => {
     `;
     await sendEmail(tutorEmail, "📬 New Tutoring Appointment - EzPremium Tutors", tutorHtml);
 
-    // ✅ Email to student
     const studentHtml = `
       <h2>Your Appointment is Confirmed</h2>
       <p><strong>Tutor:</strong> ${tutorName}</p>
@@ -56,12 +52,12 @@ router.post("/book", async (req, res) => {
     res.status(200).json({ message: "Appointment booked. Emails sent!", zoomLink });
   } catch (err) {
     console.error("❌ Booking failed:", err.message);
-    res.status(500).json({ message: "Failed to book appointment", error: err.message });
+    res.status(500).json({ message: "Booking failed", error: err.message });
   }
 });
 
 // ✅ Mark completed and send review email
-router.post("/complete/:id", protect, async (req, res) => {
+router.post("/complete/:id", async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
     if (!appointment) return res.status(404).json({ message: "Appointment not found" });
@@ -69,17 +65,26 @@ router.post("/complete/:id", protect, async (req, res) => {
     appointment.status = "completed";
     await appointment.save();
 
-    const reviewHtml = generateReviewEmailHtml(
+    const studentReviewHtml = generateReviewEmailHtml(
       appointment.tutorEmail,
       appointment.studentEmail,
-      appointment._id
+      appointment._id,
+      "student"
+    );
+    const tutorReviewHtml = generateReviewEmailHtml(
+      appointment.tutorEmail,
+      appointment.studentEmail,
+      appointment._id,
+      "tutor"
     );
 
-    await sendEmail(appointment.studentEmail, "⭐ Rate Your Tutoring Session", reviewHtml);
+    await sendEmail(appointment.studentEmail, "⭐ Rate Your Tutoring Session", studentReviewHtml);
+    await sendEmail(appointment.tutorEmail, "⭐ Rate Your Tutoring Session", tutorReviewHtml);
 
-    res.json({ message: "Appointment completed and review email sent" });
+    res.json({ message: "Appointment completed and review emails sent" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to complete appointment", error: err.message });
+    console.error("❌ Error marking completed:", err.message);
+    res.status(500).json({ message: "Failed to mark completed", error: err.message });
   }
 });
 
@@ -92,12 +97,12 @@ router.get("/upcoming-student", protect, async (req, res) => {
     const appointments = await Appointment.find({
       studentName,
       date: { $gt: today },
-      status: "upcoming",
+      status: "upcoming"
     }).sort({ date: 1, time: 1 });
 
     res.json(appointments);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch", error: err.message });
+    res.status(500).json({ message: "Fetch failed", error: err.message });
   }
 });
 
@@ -109,12 +114,12 @@ router.get("/completed-student", protect, async (req, res) => {
   try {
     const appointments = await Appointment.find({
       studentName,
-      date: { $lte: today },
+      date: { $lte: today }
     }).sort({ date: -1, time: -1 });
 
     res.json(appointments);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch", error: err.message });
+    res.status(500).json({ message: "Fetch failed", error: err.message });
   }
 });
 
@@ -126,26 +131,26 @@ router.get("/upcoming", protect, async (req, res) => {
   try {
     const appointments = await Appointment.find({
       tutorEmail,
-      date: { $gte: today },
+      date: { $gte: today }
     }).sort({ date: 1, time: 1 });
 
     res.json(appointments);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch tutor upcoming appointments", error: err.message });
+    res.status(500).json({ message: "Fetch failed", error: err.message });
   }
 });
 
-// 📋 All for student
+// 📋 All appointments for a student
 router.get("/student/:name", async (req, res) => {
   try {
     const appointments = await Appointment.find({ studentName: req.params.name }).sort({ date: -1, time: -1 });
     res.json(appointments);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch", error: err.message });
+    res.status(500).json({ message: "Fetch failed", error: err.message });
   }
 });
 
-// 📋 All for tutor (used by tutor-session-history)
+// 📋 All tutor sessions
 router.get("/tutors/sessions", protect, async (req, res) => {
   const { email } = req.query;
 
@@ -153,17 +158,17 @@ router.get("/tutors/sessions", protect, async (req, res) => {
     const appointments = await Appointment.find({ tutorEmail: email }).sort({ date: -1, time: -1 });
     res.json(appointments);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch tutor sessions", error: err.message });
+    res.status(500).json({ message: "Fetch failed", error: err.message });
   }
 });
 
-// ❌ Cancel
+// ❌ Cancel appointment
 router.delete("/cancel/:id", protect, async (req, res) => {
   try {
     const appointment = await Appointment.findByIdAndDelete(req.params.id);
     if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
-    const html = `
+    const cancelHtml = `
       <h2>Session Cancelled</h2>
       <p><strong>Student:</strong> ${appointment.studentName}</p>
       <p><strong>Tutor:</strong> ${appointment.tutorName}</p>
@@ -171,10 +176,11 @@ router.delete("/cancel/:id", protect, async (req, res) => {
       <p><strong>Time:</strong> ${appointment.time}</p>
     `;
 
-    await sendEmail(appointment.tutorEmail, "❌ Tutoring Session Cancelled", html);
-    res.json({ message: "Appointment cancelled and tutor notified." });
+    await sendEmail(appointment.tutorEmail, "❌ Tutoring Session Cancelled", cancelHtml);
+
+    res.json({ message: "Appointment cancelled and tutor notified" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to cancel", error: err.message });
+    res.status(500).json({ message: "Cancellation failed", error: err.message });
   }
 });
 

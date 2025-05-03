@@ -3,8 +3,10 @@ import nodemailer from "nodemailer";
 
 // ✉️ Sends a review email with a unique link
 export const sendReviewEmail = async (recipientEmail, role, sessionId, tutorEmail, studentEmail) => {
-  const reviewLink = `https://yourdomain.com/review.html?sessionId=${sessionId}&tutorEmail=${tutorEmail}&studentEmail=${studentEmail}&role=${role}`;
-  
+  const reviewLink = `http://localhost:5173/review.html?sessionId=${sessionId}&tutorEmail=${encodeURIComponent(
+    tutorEmail
+  )}&studentEmail=${encodeURIComponent(studentEmail)}&role=${role}`;
+
   const transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {
@@ -36,8 +38,7 @@ export const completeAppointmentAndRequestReview = async (req, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    // Optional: Enforce only student or admin can mark as complete
-    const currentUser = req.user; // Comes from protect middleware
+    const currentUser = req.user;
     if (!currentUser || !["student", "admin"].includes(currentUser.role)) {
       return res.status(403).json({ message: "Unauthorized to complete the session." });
     }

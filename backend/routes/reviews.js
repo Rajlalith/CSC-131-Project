@@ -5,7 +5,7 @@ import { protect } from "../middleware/auth.js"; // ✅ import the auth middlewa
 
 const router = express.Router();
 
-// ✅ Submit a new review after session (protected)
+// Submit a new review after session (protected)
 router.post("/", protect, async (req, res) => {
   const { tutorEmail, studentEmail, sessionId, rating, comment } = req.body;
 

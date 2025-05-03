@@ -41,7 +41,7 @@ router.put("/update", protect, async (req, res) => {
   }
 });
 
-// ✅ Get tutor sessions by email
+// Get tutor sessions by email
 router.get("/sessions", protect, async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ message: "Email is required" });

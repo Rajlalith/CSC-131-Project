@@ -1,5 +1,5 @@
 export function generateReviewEmailHtml(tutorEmail, studentEmail, sessionId, role = "student") {
-  const baseUrl = "http://localhost:5173/review.html"; // ✅ Replace with your deployed domain in production
+  const baseUrl = "http://localhost:5173/review.html"; 
 
   const reviewLink = `${baseUrl}?sessionId=${sessionId}&tutorEmail=${encodeURIComponent(
     tutorEmail

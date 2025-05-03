@@ -172,7 +172,7 @@ router.post("/logout", async (req, res) => {
   }
 });
 
-// FORGOT PASSWORD (supports plain HTML)
+// FORGOT PASSWORD 
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
@@ -202,7 +202,7 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// RESET PASSWORD (used by plain HTML)
+// RESET PASSWORD 
 router.post("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;

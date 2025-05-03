@@ -279,7 +279,7 @@ imageInput.addEventListener("change", async (e) => {
   } catch (err) {
     console.error("❌ Image upload failed:", err.message);
   }
-}); // ✅ THIS LINE WAS MISSING — closes imageInput listener
+}); 
 
 function toggleEmojiPicker() {
   emojiPicker.style.display = emojiPicker.style.display === "none" ? "block" : "none";

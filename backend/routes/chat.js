@@ -3,7 +3,7 @@ import Message from "../models/Messages.js";
 
 const router = express.Router();
 
-// 💬 Send a message
+// Send a message
 router.post("/send", async (req, res) => {
   try {
     const { sender, receiver, content, type } = req.body;
@@ -22,7 +22,7 @@ router.post("/send", async (req, res) => {
   }
 });
 
-// 💬 Get conversation between two users
+// Get conversation between two users
 router.get("/conversations/:user1/:user2", async (req, res) => {
   const { user1, user2 } = req.params;
 
@@ -40,7 +40,7 @@ router.get("/conversations/:user1/:user2", async (req, res) => {
   }
 });
 
-// 📩 Last message between two users (sidebar preview)
+// Last message between two users 
 router.get("/last", async (req, res) => {
   const { user1, user2 } = req.query;
 
@@ -58,7 +58,7 @@ router.get("/last", async (req, res) => {
   }
 });
 
-// ✏️ Edit message
+// Edit message
 router.put("/edit/:id", async (req, res) => {
   try {
     const updated = await Message.findByIdAndUpdate(
@@ -72,7 +72,7 @@ router.put("/edit/:id", async (req, res) => {
   }
 });
 
-// ❌ Delete message
+// Delete message
 router.delete("/delete/:id", async (req, res) => {
   try {
     await Message.findByIdAndDelete(req.params.id);

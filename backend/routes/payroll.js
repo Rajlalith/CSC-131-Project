@@ -4,7 +4,6 @@ import { protect } from "../middleware/auth.js"; // ✅ Token check
 
 const router = express.Router();
 
-// 🔒 GET /api/tutor/payroll?email=xyz@example.com
 router.get("/tutor/payroll", protect, async (req, res) => {
   const { email } = req.query;
 

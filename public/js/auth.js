@@ -1,6 +1,6 @@
 const baseURL = "http://localhost:5000/api"; // Change if hosted elsewhere
 
-// 🔐 Secure wrapper for protected API calls
+// Secure wrapper for protected API calls
 async function secureFetch(endpoint, options = {}) {
   const token = localStorage.getItem("token");
 
@@ -34,7 +34,7 @@ async function secureFetch(endpoint, options = {}) {
   return res;
 }
 
-// 🔐 Register user (student/tutor/admin)
+// Register user (student/tutor/admin)
 async function registerUser(data) {
   const res = await fetch(`${baseURL}/auth/register`, {
     method: "POST",
@@ -50,7 +50,7 @@ async function registerUser(data) {
   return res.json(); // May contain { message }
 }
 
-// 🔐 Login user
+// Login user
 async function loginUser(email, password, expectedRole = "student") {
   const res = await fetch(`${baseURL}/auth/login`, {
     method: "POST",
@@ -66,7 +66,6 @@ async function loginUser(email, password, expectedRole = "student") {
   }
 
   if (!res.ok) {
-    // 🚫 Only redirect to OTP page for non-admins
     if (res.status === 403 && expectedRole !== "admin") {
       sessionStorage.setItem("pendingVerificationEmail", email);
       window.location.href = "verify-otp.html";
@@ -78,7 +77,7 @@ async function loginUser(email, password, expectedRole = "student") {
   return data; // { token, role, user }
 }
 
-// 🔐 Forgot password
+// Forgot password
 async function forgotPassword(email) {
   const res = await fetch(`${baseURL}/auth/forgot-password`, {
     method: "POST",
@@ -94,7 +93,7 @@ async function forgotPassword(email) {
   return res.json();
 }
 
-// 🔁 Reset password via token
+// Reset password via token
 async function resetPassword(token, password) {
   const res = await fetch(`${baseURL}/auth/reset-password/${token}`, {
     method: "POST",
@@ -111,7 +110,7 @@ async function resetPassword(token, password) {
   return data;
 }
 
-// 🧪 Create test user (dev only)
+// Create test user 
 async function createTestUser() {
   const res = await fetch(`${baseURL}/auth/create-test-user`, {
     method: "POST",
@@ -126,7 +125,7 @@ async function createTestUser() {
   return res.json();
 }
 
-// ✅ Export all functions globally
+// Export 
 window.auth = {
   registerUser,
   loginUser,

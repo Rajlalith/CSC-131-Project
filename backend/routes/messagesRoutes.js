@@ -3,7 +3,7 @@ import Message from "../models/Message.js";
 
 const router = express.Router();
 
-// ✅ Send a message (text, image, or file)
+// Send a message (text, image, or file)
 router.post("/", async (req, res) => {
   const { senderId, receiverId, content, type = "text" } = req.body;
 
@@ -19,7 +19,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ✅ Fetch all messages between two users
+// Fetch all messages between two users
 router.get("/:user1Id/:user2Id", async (req, res) => {
   const { user1Id, user2Id } = req.params;
   try {
@@ -36,7 +36,7 @@ router.get("/:user1Id/:user2Id", async (req, res) => {
   }
 });
 
-// ✅ (Optional) Get last message preview
+// Get last message preview
 router.get("/last", async (req, res) => {
   const { user1, user2 } = req.query;
 

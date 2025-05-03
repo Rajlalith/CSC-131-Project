@@ -4,7 +4,7 @@ import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// 👥 Get all users (students + tutors) — ✅ Protected route
+// Get all users (students + tutors)
 router.get("/", protect, async (req, res) => {
   try {
     const users = await User.find({}, "name email _id role");
@@ -14,7 +14,7 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// 👤 Get tutor profile by email
+// Get tutor profile by email
 router.get("/tutor", async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ message: "Email is required" });
@@ -34,7 +34,7 @@ router.get("/tutor", async (req, res) => {
   }
 });
 
-// ✏️ Update tutor profile
+// Update tutor profile
 router.put("/tutors/update", async (req, res) => {
   const { email, bio, subjects } = req.body;
   if (!email) return res.status(400).json({ message: "Email is required" });
@@ -54,7 +54,7 @@ router.put("/tutors/update", async (req, res) => {
   }
 });
 
-// 👤 Get student profile by email
+// Get student profile by email
 router.get("/student", async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ message: "Email is required" });
@@ -78,7 +78,7 @@ router.get("/student", async (req, res) => {
   }
 });
 
-// ✏️ Update student profile
+// Update student profile
 router.put("/students/update", async (req, res) => {
   const { email, name, phone } = req.body;
   if (!email || !name) return res.status(400).json({ message: "Name and email are required" });
@@ -98,10 +98,9 @@ router.put("/students/update", async (req, res) => {
   }
 });
 
-// 📋 Get all tutors (for dropdown)
+// Get all tutors (for dropdown)
 router.get("/tutors", async (req, res) => {
   try {
-    // ✅ Include subjects so frontend can populate subject dropdown
     const tutors = await User.find({ role: "tutor" }).select("name email subjects");
     res.json(tutors);
   } catch (error) {
