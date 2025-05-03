@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Login - Student</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="login-body home-bg">
   <div class="glow-circle"></div>
@@ -18,7 +18,6 @@
       <input type="email" id="studentEmail" placeholder="Email" required />
       <input type="password" id="studentPassword" placeholder="Password" required />
       <button type="submit" class="btn-signin">Sign in</button>
-
       <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
     </form>
 
@@ -28,8 +27,48 @@
     </p>
   </div>
 
-  <!-- Shared logic -->
-  <script src="js/auth.js"></script>
-  <script src="js/script.js"></script>
+  <script>
+    const baseURL = "http://localhost:5000/api";
+
+    document.getElementById("studentLoginForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const email = document.getElementById("studentEmail").value.trim();
+      const password = document.getElementById("studentPassword").value.trim();
+
+      try {
+        const res = await fetch(`${baseURL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (res.status === 403) {
+            alert("❌ Email not verified. Redirecting to OTP verification...");
+            sessionStorage.setItem("pendingVerificationEmail", email);
+            return window.location.href = "verify-otp.html";
+          }
+          throw new Error(data.message || "Login failed");
+        }
+
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role);
+        localStorage.setItem("userEmail", data.user.email);
+        localStorage.setItem("userName", data.user.name);
+
+        if (data.role === "student") {
+          window.location.href = "homepage-student.html";
+        } else {
+          alert("This is not a student account.");
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+        alert("Login failed: " + err.message);
+      }
+    });
+  </script>
 </body>
 </html>

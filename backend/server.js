@@ -45,6 +45,12 @@ app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
+// 🛡️ Optional Request Logger (for dev/debug)
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.url}`);
+  next();
+});
+
 // ✅ Multer Storage Config for Uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -61,7 +67,7 @@ const storage = multer.diskStorage({
 
 // ✅ Dynamic Upload Route for Images and Files
 app.post("/api/chat/upload", (req, res, next) => {
-  const field = req.headers["upload-type"] === "file" ? "file" : "image"; // default to image
+  const field = req.headers["upload-type"] === "file" ? "file" : "image";
   const dynamicUpload = multer({ storage }).single(field);
   dynamicUpload(req, res, (err) => {
     if (err || !req.file) {
@@ -74,7 +80,7 @@ app.post("/api/chat/upload", (req, res, next) => {
 });
 
 // 📁 Routes
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes);         // 🔐 Includes OTP logic
 app.use("/api/chat", chatRoutes);
 app.use("/api/appointment", appointmentRoutes);
 app.use("/api/payment", paymentRoutes);
@@ -144,7 +150,6 @@ io.on("connection", (socket) => {
     console.log(`🟢 ${userEmail} connected (${socket.id})`);
   }
 
-  // ✅ Save message to MongoDB on send
   socket.on("sendMessage", async ({ senderId, receiverId, content, type = "text" }) => {
     try {
       const savedMessage = await Message.create({ senderId, receiverId, content, type });

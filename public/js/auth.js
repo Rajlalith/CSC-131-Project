@@ -1,6 +1,6 @@
 const baseURL = "http://localhost:5000/api"; // Change if hosted elsewhere
 
-// 🔐 Secure wrapper for all API calls
+// 🔐 Secure wrapper for protected API calls
 async function secureFetch(endpoint, options = {}) {
   const token = localStorage.getItem("token");
 
@@ -15,26 +15,26 @@ async function secureFetch(endpoint, options = {}) {
     headers,
   });
 
-  // 🚨 If token is blacklisted or expired
   if (res.status === 401) {
     alert("Session expired. Redirecting to login...");
-
+    const role = localStorage.getItem("role");
     localStorage.clear();
     sessionStorage.clear();
 
-    const role = localStorage.getItem("userRole");
     if (role === "tutor") {
       window.location.href = "login-tutor.html";
+    } else if (role === "admin") {
+      window.location.href = "login-admin.html";
     } else {
       window.location.href = "login.html";
     }
-    return; // stop execution
+    return;
   }
 
   return res;
 }
 
-// 🔐 Register user
+// 🔐 Register user (student/tutor/admin)
 async function registerUser(data) {
   const res = await fetch(`${baseURL}/auth/register`, {
     method: "POST",
@@ -47,23 +47,35 @@ async function registerUser(data) {
     throw new Error(error.message || "Registration failed");
   }
 
-  return res.json();
+  return res.json(); // May contain { message }
 }
 
 // 🔐 Login user
-async function loginUser(email, password) {
+async function loginUser(email, password, expectedRole = "student") {
   const res = await fetch(`${baseURL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
 
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || "Login failed");
+  let data = {};
+  try {
+    data = await res.json();
+  } catch (err) {
+    throw new Error("Invalid server response");
   }
 
-  return res.json(); // { token, user, role }
+  if (!res.ok) {
+    // 🚫 Only redirect to OTP page for non-admins
+    if (res.status === 403 && expectedRole !== "admin") {
+      sessionStorage.setItem("pendingVerificationEmail", email);
+      window.location.href = "verify-otp.html";
+      return { redirected: true };
+    }
+    throw new Error(data.message || "Login failed");
+  }
+
+  return data; // { token, role, user }
 }
 
 // 🔐 Forgot password
@@ -82,7 +94,7 @@ async function forgotPassword(email) {
   return res.json();
 }
 
-// (Optional) Create test user
+// 🧪 Create test user (dev only)
 async function createTestUser() {
   const res = await fetch(`${baseURL}/auth/create-test-user`, {
     method: "POST",
@@ -97,11 +109,11 @@ async function createTestUser() {
   return res.json();
 }
 
-// ✅ Export everything
+// ✅ Export everything globally
 window.auth = {
   registerUser,
   loginUser,
   forgotPassword,
   createTestUser,
-  secureFetch, // 👈 use this for all protected requests
+  secureFetch,
 };

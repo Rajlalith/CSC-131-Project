@@ -1,5 +1,3 @@
-// models/User.js
-
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
@@ -40,8 +38,27 @@ const userSchema = new mongoose.Schema({
   isAvailable: {
     type: Boolean,
     default: true,
+  },
+
+  // OTP fields
+  otp: {
+    type: String,
+  },
+  otpCreatedAt: {
+    type: Date,
+  },
+  otpResendCount: {
+    type: Number,
+    default: 0, // optional tracker for abuse prevention
+  },
+  verified: {
+    type: Boolean,
+    default: false,
   }
 }, { timestamps: true });
+
+// TTL index (optional for ops visibility, doesn't auto-clear individual fields)
+userSchema.index({ otpCreatedAt: 1 }, { expireAfterSeconds: 600 }); // 10 min
 
 const User = mongoose.model("User", userSchema);
 

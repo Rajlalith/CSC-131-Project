@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Verify Email - EzPremium Tutors</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="login-body home-bg">
+  <div class="glow-circle"></div>
+  <div class="glow-circle delay-1"></div>
+  <div class="glow-circle delay-2"></div>
+
+  <div class="login-container">
+    <h2 class="login-heading">Email Verification</h2>
+    <p style="text-align:center;">Enter the 6-digit OTP sent to your email</p>
+    <form id="otpForm">
+      <label><span>🔑</span> OTP:</label>
+      <input type="text" id="otpInput" required maxlength="6" pattern="\d{6}">
+      <button type="submit" class="btn-signin">Verify</button>
+    </form>
+
+    <p class="footer-links" style="text-align:center;">
+      Didn't receive the code?
+      <button id="resendOtpBtn" style="color:#00f;background:none;border:none;cursor:pointer;text-decoration:underline;">
+        Resend OTP
+      </button>
+    </p>
+  </div>
+
+  <script>
+    const baseURL = "http://localhost:5000/api";
+    const email = sessionStorage.getItem("pendingVerificationEmail");
+
+    if (!email) {
+      alert("No email found for verification. Please sign up again.");
+      window.location.href = "signup.html";
+    }
+
+    // ✅ Verify OTP
+    document.getElementById("otpForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const otp = document.getElementById("otpInput").value.trim();
+
+      try {
+        const res = await fetch(`${baseURL}/auth/verify-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Verification failed");
+
+        alert("✅ Email verified! You can now log in.");
+        sessionStorage.removeItem("pendingVerificationEmail");
+
+        if (email.includes("tutor")) {
+          window.location.href = "login-tutor.html";
+        } else {
+          window.location.href = "login.html";
+        }
+
+      } catch (err) {
+        console.error("❌ OTP verification error:", err);
+        alert("Verification failed: " + err.message);
+      }
+    });
+
+    // 🔁 Resend OTP
+    document.getElementById("resendOtpBtn").addEventListener("click", async () => {
+      try {
+        const res = await fetch(`${baseURL}/auth/resend-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        alert("✅ New OTP sent to your email.");
+      } catch (err) {
+        alert("❌ Failed to resend OTP: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

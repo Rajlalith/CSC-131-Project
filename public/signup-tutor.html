@@ -11,7 +11,7 @@
   <div class="glow-circle delay-2"></div>
 
   <div class="login-container">
-    <h2 class="login-heading">Tutor sign up</h2>
+    <h2 class="login-heading">Tutor Sign Up</h2>
     <form id="tutorSignupForm">
       <label><span>👤</span> Username:</label>
       <input type="text" id="tutorUsername" required>
@@ -19,24 +19,25 @@
       <input type="email" id="tutorEmail" required>
       <label><span>🔐</span> Password:</label>
       <input type="password" id="tutorPassword" required>
-      <label><span>🔐</span> Confirm password:</label>
+      <label><span>🔐</span> Confirm Password:</label>
       <input type="password" id="tutorConfirmPassword" required>
-      <button type="submit" class="btn-signin">Sign up</button>
+      <button type="submit" class="btn-signin">Sign Up</button>
     </form>
     <p class="footer-links">
       Already have an account? <a href="login-tutor.html">Log in</a>
     </p>
   </div>
 
-  <script src="js/auth.js"></script>
   <script>
+    const baseURL = "http://localhost:5000/api";
+
     document.getElementById("tutorSignupForm").addEventListener("submit", async function (e) {
       e.preventDefault();
 
-      const name = document.getElementById("tutorUsername").value;
-      const email = document.getElementById("tutorEmail").value;
-      const password = document.getElementById("tutorPassword").value;
-      const confirm = document.getElementById("tutorConfirmPassword").value;
+      const name = document.getElementById("tutorUsername").value.trim();
+      const email = document.getElementById("tutorEmail").value.trim();
+      const password = document.getElementById("tutorPassword").value.trim();
+      const confirm = document.getElementById("tutorConfirmPassword").value.trim();
 
       if (password !== confirm) {
         alert("Passwords do not match!");
@@ -44,14 +45,24 @@
       }
 
       try {
-        await auth.registerUser({ name, email, password, role: "tutor" });
-        alert("Tutor account created successfully! Redirecting to login...");
-        window.location.href = "login-tutor.html";
+        const res = await fetch(`${baseURL}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password, role: "tutor" }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Signup failed");
+
+        alert("✅ OTP sent to your email. Please verify to complete signup.");
+        sessionStorage.setItem("pendingVerificationEmail", email);
+        window.location.href = "verify-otp.html";
+
       } catch (err) {
+        console.error("❌ Tutor signup error:", err);
         alert("Signup failed: " + err.message);
       }
     });
   </script>
 </body>
 </html>
-

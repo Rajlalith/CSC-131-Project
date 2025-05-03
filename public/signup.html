@@ -30,7 +30,7 @@
   </div>
 
   <script>
-    const baseURL = "http://localhost:5000/api"; // Your backend URL
+    const baseURL = "http://localhost:5000/api";
 
     document.getElementById("studentSignupForm").addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -52,22 +52,15 @@
           body: JSON.stringify({ name, email, password, role: "student" }),
         });
 
-        let data = {};
-        try {
-          data = await res.json();
-        } catch (err) {
-          console.error("❌ Failed to parse signup response:", err);
-        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Signup failed");
 
-        if (!res.ok) {
-          throw new Error(data.message || "Signup failed");
-        }
-
-        alert("✅ Account created successfully! Redirecting to login...");
-        window.location.href = "login-student.html";
+        alert("✅ OTP sent to your email. Please verify to complete signup.");
+        sessionStorage.setItem("pendingVerificationEmail", email); // Store email temporarily
+        window.location.href = "verify-otp.html"; // Redirect to OTP input page
 
       } catch (err) {
-        console.error(err);
+        console.error("❌ Signup error:", err);
         alert("Signup failed: " + err.message);
       }
     });

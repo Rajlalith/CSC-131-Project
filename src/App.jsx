@@ -5,9 +5,10 @@ import { Routes, Route } from "react-router-dom";
 import Index from "./pages/Index"; // Landing page
 import Login from "./pages/Login";
 import LoginTutor from "./pages/LoginTutor";
-import Signup from "./pages/SIgnup";  
+import Signup from "./pages/SIgnup";
 import SignupTutor from "./pages/SignupTutor";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword"; 
 import HomepageStudent from "./pages/HomepageStudent";
 import HomepageTutor from "./pages/HomepageTutor";
 import DashboardStudent from "./pages/DashboardStudent";
@@ -32,7 +33,7 @@ function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/signup-tutor" element={<SignupTutor />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password/:token" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} /> {/* ✅ Updated route */}
 
       {/* General */}
       <Route path="/contact" element={<Contact />} />
@@ -57,3 +58,4 @@ function App() {
 }
 
 export default App;
+
