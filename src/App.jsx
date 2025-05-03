@@ -8,7 +8,7 @@ import LoginTutor from "./pages/LoginTutor";
 import Signup from "./pages/SIgnup";
 import SignupTutor from "./pages/SignupTutor";
 import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword"; 
+import ResetPassword from "./pages/resetPassword"; 
 import HomepageStudent from "./pages/HomepageStudent";
 import HomepageTutor from "./pages/HomepageTutor";
 import DashboardStudent from "./pages/DashboardStudent";
@@ -33,7 +33,7 @@ function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/signup-tutor" element={<SignupTutor />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} /> {/* ✅ Updated route */}
+      <Route path="/reset-password" element={<ResetPassword />} /> 
 
       {/* General */}
       <Route path="/contact" element={<Contact />} />

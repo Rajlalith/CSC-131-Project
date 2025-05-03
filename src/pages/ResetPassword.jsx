@@ -1,4 +1,4 @@
-// src/pages/ResetPassword.jsx
+// src/pages/resetPassword.jsx
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 

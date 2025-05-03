@@ -9,7 +9,7 @@ import { sendEmail } from "../utils/emailsender.js";
 dotenv.config();
 const router = express.Router();
 
-// REGISTER WITH OTP (admins skip OTP)
+// REGISTER
 router.post("/register", async (req, res) => {
   const { name, email, password, role } = req.body;
 
@@ -41,9 +41,7 @@ router.post("/register", async (req, res) => {
     }
 
     res.status(201).json({
-      message: isAdmin
-        ? "Admin registered successfully."
-        : "User registered. OTP sent to email.",
+      message: isAdmin ? "Admin registered successfully." : "User registered. OTP sent to email.",
     });
   } catch (err) {
     console.error("❌ Registration error:", err);
@@ -174,15 +172,13 @@ router.post("/logout", async (req, res) => {
   }
 });
 
-// FORGOT PASSWORD
+// FORGOT PASSWORD (supports plain HTML)
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.json({ message: "If the email exists, a reset link has been sent." });
-    }
+    if (!user) return res.json({ message: "If the email exists, a reset link has been sent." });
 
     const token = crypto.randomBytes(32).toString("hex");
     user.resetToken = token;
@@ -206,7 +202,7 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// RESET PASSWORD
+// RESET PASSWORD (used by plain HTML)
 router.post("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;

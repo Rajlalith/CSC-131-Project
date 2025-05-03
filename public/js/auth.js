@@ -94,6 +94,23 @@ async function forgotPassword(email) {
   return res.json();
 }
 
+// 🔁 Reset password via token
+async function resetPassword(token, password) {
+  const res = await fetch(`${baseURL}/auth/reset-password/${token}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Password reset failed");
+  }
+
+  return data;
+}
+
 // 🧪 Create test user (dev only)
 async function createTestUser() {
   const res = await fetch(`${baseURL}/auth/create-test-user`, {
@@ -109,11 +126,12 @@ async function createTestUser() {
   return res.json();
 }
 
-// ✅ Export everything globally
+// ✅ Export all functions globally
 window.auth = {
   registerUser,
   loginUser,
   forgotPassword,
+  resetPassword,
   createTestUser,
   secureFetch,
 };

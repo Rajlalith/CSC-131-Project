@@ -49,17 +49,26 @@ const userSchema = new mongoose.Schema({
   },
   otpResendCount: {
     type: Number,
-    default: 0, // optional tracker for abuse prevention
+    default: 0,
   },
   verified: {
     type: Boolean,
     default: false,
-  }
+  },
+
+  // Password reset fields
+  resetToken: {
+    type: String,
+  },
+  tokenExpiry: {
+    type: Date,
+  },
 }, { timestamps: true });
 
-// TTL index (optional for ops visibility, doesn't auto-clear individual fields)
-userSchema.index({ otpCreatedAt: 1 }, { expireAfterSeconds: 600 }); // 10 min
+// TTL index for OTP (10 minutes)
+userSchema.index({ otpCreatedAt: 1 }, { expireAfterSeconds: 600 });
 
 const User = mongoose.model("User", userSchema);
 
 export default User;
+
