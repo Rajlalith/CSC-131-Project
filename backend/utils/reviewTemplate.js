@@ -1,7 +1,9 @@
 export function generateReviewEmailHtml(tutorEmail, studentEmail, sessionId, role = "student") {
-  const baseUrl = "https://yourdomain.com/review.html"; // 🔁 Replace with actual deployed domain
+  const baseUrl = "http://localhost:5173/review.html"; // ✅ Replace with your deployed domain in production
 
-  const reviewLink = `${baseUrl}?sessionId=${sessionId}&tutorEmail=${encodeURIComponent(tutorEmail)}&studentEmail=${encodeURIComponent(studentEmail)}&role=${role}`;
+  const reviewLink = `${baseUrl}?sessionId=${sessionId}&tutorEmail=${encodeURIComponent(
+    tutorEmail
+  )}&studentEmail=${encodeURIComponent(studentEmail)}&role=${role}`;
 
   const greeting =
     role === "student"
@@ -18,7 +20,7 @@ export function generateReviewEmailHtml(tutorEmail, studentEmail, sessionId, rol
       <h2>${greeting}</h2>
       <p>${instruction}</p>
       <p style="margin: 20px 0;">
-        <a href="${reviewLink}" target="_blank" style="display: inline-block; padding: 12px 20px; background-color: #4285f4; color: white; text-decoration: none; border-radius: 5px;">
+        <a href="${reviewLink}" target="_blank" style="display: inline-block; padding: 12px 20px; background-color: #f57c00; color: white; text-decoration: none; border-radius: 5px;">
           Leave a Review
         </a>
       </p>
@@ -26,4 +28,3 @@ export function generateReviewEmailHtml(tutorEmail, studentEmail, sessionId, rol
     </div>
   `;
 }
-  
