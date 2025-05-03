@@ -9,7 +9,7 @@ const appointmentSchema = new mongoose.Schema({
   notes: { type: String },
   tutorEmail: { type: String, required: true },
   reminderSent: { type: Boolean, default: false },
-  status: { type: String, enum: ["upcoming", "completed", "cancelled"], default: "upcoming" }, // ✅ Add this
+  status: { type: String, enum: ["upcoming", "completed", "cancelled"], default: "upcoming" }, 
 });
 
 export default mongoose.model("Appointment", appointmentSchema);
