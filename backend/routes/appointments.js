@@ -167,7 +167,7 @@ router.delete("/cancel/:id", protect, async (req, res) => {
       <p><strong>Tutor:</strong> ${appointment.tutorName}</p>
       <p><strong>Date:</strong> ${appointment.date}</p>
       <p><strong>Time:</strong> ${appointment.time}</p>
-      <p>This tutoring session has been cancelled by the student.</p>
+      <p>This tutoring session has been cancelled.</p>
     `;
 
     await sendEmail(appointment.tutorEmail, subject, html);
