@@ -8,32 +8,150 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="View past and upcoming tutoring sessions for students." />
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: black; }
-    .history-container { display: flex; }
-    .sidebar { width: 90px; background-color: #fcefd4; padding-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; min-height: 100vh; }
-    .sidebar-item { display: flex; flex-direction: column; align-items: center; text-align: center; text-decoration: none; }
-    .sidebar-item img { width: 30px; height: 30px; margin-bottom: 5px; }
-    .sidebar-item span { font-size: 0.8rem; color: black; font-weight: bold; }
-    .history-content { flex-grow: 1; padding: 2rem; background: #ffffff; border-radius: 8px; margin: 2rem; }
-    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .logout-btn { background: none; border: none; color: black; font-weight: bold; cursor: pointer; }
-    .tabs { display: flex; gap: 1rem; margin-bottom: 1rem; }
-    .tabs button { padding: 0.75rem 1.5rem; font-size: 1rem; border: none; border-radius: 5px; cursor: pointer; }
-    .tabs .active { background-color: #c6d7f9; font-weight: bold; }
-    .tabs .inactive { background-color: #e0e0e0; }
-    .label-bar { background-color: #d6e3ff; padding: 1rem; border-radius: 5px; font-size: 1.3rem; font-weight: bold; margin-bottom: 1.5rem; }
-    .history-table { width: 100%; border-collapse: collapse; background: white; }
-    .history-table th, .history-table td { padding: 1rem; border: 1px solid #ccc; text-align: center; }
-    .history-table th { background-color: #bdd4ff; }
-    .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-    .modal-content { background: white; padding: 2rem; border-radius: 12px; text-align: center; width: 90%; max-width: 400px; }
-    .modal-buttons { margin-top: 1.5rem; display: flex; justify-content: space-around; }
-    .btn-confirm { background-color: #f57c00; color: white; padding: 0.7rem 1.5rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .btn-cancel { background-color: #ccc; color: black; padding: 0.7rem 1.5rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .hidden { display: none; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: black;
+    }
+    .history-container {
+      display: flex;
+    }
+    .sidebar {
+      width: 90px;
+      background-color: #fcefd4;
+      padding-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      min-height: 100vh;
+    }
+    .sidebar-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      text-decoration: none;
+    }
+    .sidebar-item img {
+      width: 30px;
+      height: 30px;
+      margin-bottom: 5px;
+    }
+    .sidebar-item span {
+      font-size: 0.8rem;
+      color: black;
+      font-weight: bold;
+    }
+    .history-content {
+      flex-grow: 1;
+      padding: 2rem;
+      background: #ffffff;
+      border-radius: 8px;
+      margin: 2rem;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .logout-btn {
+      background: none;
+      border: none;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .tabs button {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .tabs .active {
+      background-color: #c6d7f9;
+      font-weight: bold;
+    }
+    .tabs .inactive {
+      background-color: #e0e0e0;
+    }
+    .label-bar {
+      background-color: #d6e3ff;
+      padding: 1rem;
+      border-radius: 5px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 1.5rem;
+    }
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+    .history-table th, .history-table td {
+      padding: 1rem;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    .history-table th {
+      background-color: #bdd4ff;
+    }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+    .modal-buttons {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: space-around;
+    }
+    .btn-confirm {
+      background-color: #f57c00;
+      color: white;
+      padding: 0.7rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-cancel {
+      background-color: #ccc;
+      color: black;
+      padding: 0.7rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
-
 <body>
 <div class="history-container">
   <!-- Sidebar -->
