@@ -69,19 +69,7 @@ router.post("/complete/:id", async (req, res) => {
     appointment.status = "completed";
     await appointment.save();
     console.log(`✅ Marked completed: ${appointment._id}`);
-    
-      // Generate review tokens
-      const studentToken = jwt.sign(
-        { email: appointment.studentEmail },
-        process.env.JWT_REVIEW_SECRET,
-        { expiresIn: "2d" }
-      );
-      const tutorToken = jwt.sign(
-        { email: appointment.tutorEmail },
-        process.env.JWT_REVIEW_SECRET,
-        { expiresIn: "2d" }
-      );
-      
+
     const studentReviewHtml = generateReviewEmailHtml(
       appointment.tutorEmail,
       appointment.studentEmail,
