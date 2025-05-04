@@ -169,34 +169,35 @@
     function tutorLogout() {
       logoutUser(); // from logout.js
     }
-
+  
     const ratePerHour = 30;
     const tbody = document.getElementById('payroll-body');
-
+  
     async function loadPayroll() {
       try {
         const tutorEmail = localStorage.getItem('userEmail');
         if (!tutorEmail) throw new Error("Missing tutor email in localStorage.");
-
+  
         const res = await auth.secureFetch(`/tutor/payroll?email=${encodeURIComponent(tutorEmail)}`);
-        const sessions = await res.json();
-
+        if (!res.ok) throw new Error(res.data?.message || "Fetch failed");
+  
+        const sessions = res.data;
         tbody.innerHTML = '';
         let totalEarnings = 0;
-
+  
         if (!Array.isArray(sessions) || sessions.length === 0) {
           tbody.innerHTML = `<tr><td colspan="5">No payroll data available.</td></tr>`;
           return;
         }
-
+  
         sessions.forEach(session => {
           const duration = session.duration || 1;
           const earnings = duration * ratePerHour;
           totalEarnings += earnings;
-
+  
           const dateObj = new Date(`${session.date}T${session.time}`);
           const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
-
+  
           const row = document.createElement('tr');
           row.innerHTML = `
             <td>${session.date}</td>
@@ -207,25 +208,25 @@
           `;
           tbody.appendChild(row);
         });
-
+  
         document.getElementById('totalEarnings').textContent = `Total Earnings: $${totalEarnings.toFixed(2)}`;
       } catch (error) {
         console.error('Error loading payroll:', error);
         tbody.innerHTML = `<tr><td colspan="5">Failed to load payroll information.</td></tr>`;
         document.getElementById('totalEarnings').textContent = `Total Earnings: $0.00`;
-
+  
         setTimeout(() => {
           logoutUser();
         }, 1500);
       }
     }
-
+  
     function downloadReport() {
       const table = document.getElementById("payrollTable");
       const wb = XLSX.utils.table_to_book(table, { sheet: "Payroll Report" });
       XLSX.writeFile(wb, "Tutor_Payroll_Report.xlsx");
     }
-
+  
     loadPayroll();
   </script>
 </body>

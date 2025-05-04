@@ -93,9 +93,9 @@
 
     try {
       const res = await auth.secureFetch(`/appointment/student/${encodeURIComponent(studentName)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Fetch failed");
+      if (!res || !res.ok) throw new Error(res?.data?.message || "Fetch failed");
 
+      const data = res.data;
       appointmentsBody.innerHTML = "";
 
       if (data.length === 0) {
@@ -112,7 +112,7 @@
         if (apptDateTime < now) status = "Completed";
 
         const cancelBtn = status === "Upcoming"
-          ? `<button onclick="cancelAppointment('${appt._id}', this)"> Cancel</button>`
+          ? `<button onclick="cancelAppointment('${appt._id}', this)">Cancel</button>`
           : "";
 
         const row = document.createElement("tr");
@@ -128,7 +128,7 @@
       });
 
     } catch (error) {
-      console.error(error);
+      console.error("❌ Error loading appointments:", error);
       appointmentsBody.innerHTML = `<tr><td colspan="6">Failed to load appointments. Redirecting...</td></tr>`;
       setTimeout(() => window.location.href = "login.html", 1500);
     }
@@ -145,14 +145,14 @@
         method: "DELETE"
       });
 
-      if (!res.ok) throw new Error("Cancel failed");
+      if (!res || !res.ok) throw new Error(res?.data?.message || "Cancel failed");
 
       btn.closest("tr").remove();
     } catch (err) {
       console.error("❌ Cancel error:", err);
       alert("Failed to cancel appointment. Try again.");
       btn.disabled = false;
-      btn.textContent = "❌ Cancel";
+      btn.textContent = "Cancel";
     }
   }
 

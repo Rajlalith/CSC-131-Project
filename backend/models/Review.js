@@ -4,10 +4,12 @@ const reviewSchema = new mongoose.Schema({
   tutorEmail: {
     type: String,
     required: true,
+    match: /.+\@.+\..+/
   },
   studentEmail: {
     type: String,
     required: true,
+    match: /.+\@.+\..+/
   },
   sessionId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -30,4 +32,8 @@ const reviewSchema = new mongoose.Schema({
   }
 });
 
-export default mongoose.model("Review", reviewSchema);
+// Prevent duplicate reviews per session by same student/tutor
+reviewSchema.index({ sessionId: 1, studentEmail: 1 }, { unique: true });
+reviewSchema.index({ sessionId: 1, tutorEmail: 1 }, { unique: true });
+
+export default mongoose.models.Review || mongoose.model("Review", reviewSchema);

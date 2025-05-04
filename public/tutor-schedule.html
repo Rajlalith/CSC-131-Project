@@ -191,58 +191,57 @@
     const tutorEmail = localStorage.getItem("userEmail");
     const scheduleTableBody = document.getElementById("scheduleTableBody");
     const notificationDropdown = document.getElementById("notification-dropdown");
-
+  
     const toggleNotifications = () => {
       notificationDropdown.classList.toggle("visible");
     };
-
+  
     const addNotification = (message) => {
       const notificationItem = document.createElement("div");
       notificationItem.className = "notification-item";
       notificationItem.textContent = message;
       notificationDropdown.appendChild(notificationItem);
     };
-
+  
     const cancelAppointment = async (id, button) => {
       if (!confirm("Are you sure you want to cancel this appointment?")) return;
-
+  
       try {
         button.disabled = true;
         button.textContent = "Cancelling...";
-
+  
         const res = await auth.secureFetch(`/appointment/cancel/${id}`, {
           method: "DELETE"
         });
-
-        if (!res.ok) throw new Error("Failed to cancel appointment");
-
+  
+        if (!res || !res.ok) throw new Error(res?.data?.message || "Failed to cancel");
+  
         button.closest("tr").remove();
       } catch (err) {
-        console.error(err);
+        console.error("❌ Cancel failed:", err);
         alert("Failed to cancel appointment.");
         button.disabled = false;
         button.textContent = "Cancel";
       }
     };
-
+  
     const fetchSchedule = async () => {
       scheduleTableBody.innerHTML = `<tr><td colspan="5">Loading schedule...</td></tr>`;
-
+  
       try {
         const res = await auth.secureFetch(`/appointment/upcoming?tutorEmail=${encodeURIComponent(tutorEmail)}`);
-        if (!res.ok) throw new Error("Failed to fetch schedule");
-
-        const data = await res.json();
-
+        if (!res || !res.ok) throw new Error(res?.data?.message || "Failed to fetch schedule");
+  
+        const data = res.data;
         scheduleTableBody.innerHTML = "";
         notificationDropdown.innerHTML = "";
-
+  
         if (!data.length) {
           scheduleTableBody.innerHTML = `<tr><td colspan="5">No upcoming sessions.</td></tr>`;
           notificationDropdown.innerHTML = "<p>No upcoming appointments</p>";
           return;
         }
-
+  
         data.forEach(session => {
           const row = document.createElement("tr");
           row.innerHTML = `
@@ -253,20 +252,18 @@
             <td><button class="cancel-btn" onclick="cancelAppointment('${session._id}', this)">Cancel</button></td>
           `;
           scheduleTableBody.appendChild(row);
-
+  
           addNotification(`Session with ${session.studentName} on ${session.date} at ${session.time}`);
         });
-
+  
       } catch (err) {
-        console.error(err);
+        console.error("❌ Fetch schedule failed:", err);
         scheduleTableBody.innerHTML = `<tr><td colspan="5">Failed to load schedule. Redirecting...</td></tr>`;
         notificationDropdown.innerHTML = "<p>Auth error. Redirecting...</p>";
-        setTimeout(() => {
-          logoutUser();
-        }, 1500);
+        setTimeout(() => logoutUser(), 1500);
       }
     };
-
+  
     fetchSchedule();
   </script>
 </body>

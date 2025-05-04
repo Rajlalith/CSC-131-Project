@@ -164,7 +164,6 @@
     </table>
   </div>
 
-  <!-- ✅ Include auth.js before using secureFetch -->
   <script src="js/auth.js"></script>
   <script src="js/logout.js"></script>
 
@@ -177,24 +176,22 @@
 
       try {
         const res = await auth.secureFetch(`/tutors/sessions?email=${encodeURIComponent(tutorEmail)}`);
-        if (!res.ok) throw new Error("Session expired or unauthorized.");
-        const sessions = await res.json();
+        if (!res || !res.ok) throw new Error(res?.data?.message || "Unauthorized");
 
-        let filteredSessions = [];
+        const sessions = res.data;
         const now = new Date();
 
-        if (type === "upcoming") {
-          filteredSessions = sessions.filter(session => new Date(`${session.date}T${session.time}`) >= now);
-        } else {
-          filteredSessions = sessions.filter(session => new Date(`${session.date}T${session.time}`) < now);
-        }
+        const filteredSessions = sessions.filter(session => {
+          const dateTime = new Date(`${session.date}T${session.time}`);
+          return type === "upcoming" ? dateTime >= now : dateTime < now;
+        });
 
+        sessionTableBody.innerHTML = "";
         if (filteredSessions.length === 0) {
           sessionTableBody.innerHTML = `<tr><td colspan="5">No ${type} sessions found.</td></tr>`;
           return;
         }
 
-        sessionTableBody.innerHTML = "";
         filteredSessions.forEach(session => {
           const row = document.createElement("tr");
           row.innerHTML = `
@@ -208,11 +205,9 @@
         });
 
       } catch (err) {
-        console.error(err);
+        console.error("❌ Error loading sessions:", err);
         sessionTableBody.innerHTML = `<tr><td colspan="5">Failed to load sessions. Redirecting to login...</td></tr>`;
-        setTimeout(() => {
-          logoutUser();
-        }, 1500);
+        setTimeout(() => logoutUser(), 1500);
       }
     };
 

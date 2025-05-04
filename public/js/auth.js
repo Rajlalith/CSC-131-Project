@@ -10,28 +10,50 @@ async function secureFetch(endpoint, options = {}) {
     "Content-Type": "application/json",
   };
 
-  const res = await fetch(`${baseURL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const res = await fetch(`${baseURL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (res.status === 401) {
-    alert("Session expired. Redirecting to login...");
-    const role = localStorage.getItem("role");
-    localStorage.clear();
-    sessionStorage.clear();
+    if (res.status === 401) {
+      alert("Session expired. Redirecting to login...");
+      const role = localStorage.getItem("role");
+      localStorage.clear();
+      sessionStorage.clear();
 
-    if (role === "tutor") {
-      window.location.href = "login-tutor.html";
-    } else if (role === "admin") {
-      window.location.href = "login-admin.html";
-    } else {
-      window.location.href = "login.html";
+      if (role === "tutor") {
+        window.location.href = "login-tutor.html";
+      } else if (role === "admin") {
+        window.location.href = "login-admin.html";
+      } else {
+        window.location.href = "login.html";
+      }
+      return;
     }
-    return;
-  }
 
-  return res;
+    let data;
+    try {
+      data = await res.json();
+    } catch (err) {
+      console.warn("⚠️ Failed to parse JSON:", err);
+      throw new Error("Invalid server response format");
+    }
+
+    if (!res.ok) {
+      console.error("❌ API error:", data.message || "Unknown error");
+      throw new Error(data.message || "Request failed");
+    }
+
+    return {
+      ok: true,
+      status: res.status,
+      data,
+    };
+  } catch (err) {
+    console.error("❌ secureFetch failed:", err.message);
+    throw err;
+  }
 }
 
 // Register user (student/tutor/admin)
@@ -47,7 +69,7 @@ async function registerUser(data) {
     throw new Error(error.message || "Registration failed");
   }
 
-  return res.json(); // May contain { message }
+  return res.json();
 }
 
 // Login user
@@ -74,7 +96,7 @@ async function loginUser(email, password, expectedRole = "student") {
     throw new Error(data.message || "Login failed");
   }
 
-  return data; // { token, role, user }
+  return data;
 }
 
 // Forgot password
@@ -110,7 +132,7 @@ async function resetPassword(token, password) {
   return data;
 }
 
-// Create test user 
+// Create test user
 async function createTestUser() {
   const res = await fetch(`${baseURL}/auth/create-test-user`, {
     method: "POST",
@@ -125,7 +147,7 @@ async function createTestUser() {
   return res.json();
 }
 
-// Export 
+// Export
 window.auth = {
   registerUser,
   loginUser,

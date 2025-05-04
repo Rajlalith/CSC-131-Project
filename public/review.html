@@ -51,6 +51,10 @@
       cursor: pointer;
       font-weight: bold;
     }
+    button:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
     .message {
       margin-top: 1rem;
       font-weight: bold;
@@ -78,55 +82,86 @@
         <textarea id="comment" rows="4" placeholder="Share your experience..."></textarea>
       </div>
 
-      <button type="submit">Submit Review</button>
+      <button type="submit" id="submitBtn">Submit Review</button>
       <div id="message" class="message"></div>
     </form>
   </div>
 
   <script>
-    const BASE_API_URL = "http://localhost:5000/api"; // ← backend base URL
+    const BASE_API_URL = "http://localhost:5000/api";
 
     const params = new URLSearchParams(window.location.search);
     const tutorEmail = params.get("tutorEmail");
     const studentEmail = params.get("studentEmail");
     const sessionId = params.get("sessionId");
+    const reviewToken = params.get("token");
 
     const form = document.getElementById("reviewForm");
     const message = document.getElementById("message");
+    const submitBtn = document.getElementById("submitBtn");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+      message.textContent = "";
+      submitBtn.disabled = true;
 
       const rating = parseInt(document.getElementById("rating").value);
-      const comment = document.getElementById("comment").value;
+      const comment = document.getElementById("comment").value.trim();
 
       if (!tutorEmail || !studentEmail || !sessionId || !rating) {
-        message.textContent = "Missing required data from session link.";
+        message.textContent = "❌ Missing required information.";
         message.style.color = "red";
+        submitBtn.disabled = false;
         return;
       }
 
       try {
+        const headers = { "Content-Type": "application/json" };
+        const body = {
+          tutorEmail,
+          studentEmail,
+          sessionId,
+          rating,
+          comment,
+        };
+
+        // Decide token source
+        if (reviewToken) {
+          body.token = reviewToken;
+          console.log("📩 Using review token from email link:", reviewToken);
+        } else {
+          const jwt = localStorage.getItem("token");
+          if (jwt) {
+            headers.Authorization = `Bearer ${jwt}`;
+            console.log("🔐 Using JWT token from localStorage");
+          } else {
+            console.warn("⚠️ No token provided at all.");
+          }
+        }
+
         const res = await fetch(`${BASE_API_URL}/reviews`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tutorEmail, studentEmail, sessionId, rating, comment })
+          headers,
+          body: JSON.stringify(body),
         });
 
         const data = await res.json();
 
         if (res.ok) {
+          message.textContent = "✅ Review submitted successfully!";
           message.style.color = "green";
-          message.textContent = "Thank you! Your review has been submitted.";
           form.reset();
         } else {
+          message.textContent = `❌ ${data.message || "Failed to submit review"}`;
           message.style.color = "red";
-          message.textContent = data.message || "Failed to submit review.";
         }
+
       } catch (err) {
-        console.error(err);
+        console.error("❌ Review error:", err);
+        message.textContent = "❌ Server error. Please try again later.";
         message.style.color = "red";
-        message.textContent = "Server error. Please try again later.";
+      } finally {
+        submitBtn.disabled = false;
       }
     });
   </script>

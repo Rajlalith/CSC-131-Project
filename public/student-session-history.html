@@ -207,7 +207,10 @@
   </div>
 </div>
 
-<!-- ✅ Required for secure fetch -->
+<!-- Required for secure fetch -->
+<script src="js/auth.js"></script>
+<script src="js/logout.js"></script>
+
 <script src="js/auth.js"></script>
 <script src="js/logout.js"></script>
 
@@ -227,10 +230,11 @@
 
     try {
       const res = await auth.secureFetch(`/appointment/student/${encodeURIComponent(studentName)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Fetch failed");
+      if (!res || !res.ok) throw new Error(res?.data?.message || "Session fetch failed");
 
+      const data = res.data;
       const now = new Date();
+
       const filteredData = data.filter(session => {
         const sessionDateTime = new Date(`${session.date}T${session.time}`);
         return type === "upcoming" ? sessionDateTime >= now : sessionDateTime < now;
@@ -247,17 +251,45 @@
       filteredData.forEach(session => {
         const dateObj = new Date(`${session.date}T${session.time}`);
         const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+        const isPast = dateObj < now;
+        const isCompleted = session.status === "completed";
+
+        const statusContent = type === "completed"
+          ? (isCompleted
+              ? "Completed"
+              : `<button onclick="markCompleted('${session._id}')">✅ Mark as Completed</button>`)
+          : "Upcoming";
+
         const row = document.createElement("tr");
-        row.innerHTML = `<td>${session.date}</td><td>${session.tutorName}</td><td>${dayName}</td><td>${session.time}</td><td>${type.charAt(0).toUpperCase() + type.slice(1)}</td>`;
+        row.innerHTML = `
+          <td>${session.date}</td>
+          <td>${session.tutorName}</td>
+          <td>${dayName}</td>
+          <td>${session.time}</td>
+          <td>${statusContent}</td>
+        `;
         sessionTableBody.appendChild(row);
       });
 
     } catch (err) {
-      console.error(err);
+      console.error("❌ Error fetching sessions:", err);
       sessionTableBody.innerHTML = `<tr><td colspan="5">Failed to load sessions. Redirecting...</td></tr>`;
       setTimeout(() => window.location.href = "login.html", 1500);
     }
   };
+
+  async function markCompleted(appointmentId) {
+    try {
+      const res = await auth.secureFetch(`/appointment/complete/${appointmentId}`, { method: "POST" });
+      if (!res || !res.ok) throw new Error(res?.data?.message || "Completion failed");
+
+      alert("✅ Session marked as completed! Review emails sent.");
+      fetchSessions("completed");
+    } catch (err) {
+      console.error("❌ Error marking completed:", err);
+      alert("❌ Failed to mark session as completed.");
+    }
+  }
 
   document.getElementById("upcomingBtn").addEventListener("click", () => {
     document.getElementById("upcomingBtn").classList.add("active");
@@ -279,8 +311,22 @@
     };
   }
 
-  fetchSessions("upcoming");
+  (async () => {
+    try {
+      const autoRes = await auth.secureFetch("/appointment/auto-complete", { method: "POST" });
+      if (autoRes?.ok) {
+        console.log("✅ Auto-complete run successfully");
+      } else {
+        console.warn("⚠️ Auto-complete failed:", autoRes?.data?.message || "Unknown error");
+      }
+    } catch (err) {
+      console.warn("⚠️ Auto-complete exception:", err);
+    }
+
+    fetchSessions("upcoming");
+  })();
 </script>
+
 </body>
 </html>
 

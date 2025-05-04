@@ -158,52 +158,51 @@
 
 <script>
   async function loadTutorProfile() {
-    const email = localStorage.getItem("userEmail");
-    if (!email) {
-      alert("Session expired. Redirecting...");
-      return setTimeout(() => window.location.href = "login-tutor.html", 1500);
-    }
-
-    try {
-      const res = await auth.secureFetch(`/users/tutor?email=${encodeURIComponent(email)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      document.getElementById("name").value = data.name || "";
-      document.getElementById("email").value = data.email || "";
-      document.getElementById("bio").value = data.bio || "";
-      document.getElementById("subjects").value = (data.subjects || []).join(", ");
-    } catch (err) {
-      alert("❌ Failed to load profile: " + err.message);
-      setTimeout(() => window.location.href = "login-tutor.html", 1500);
-    }
+  const email = localStorage.getItem("userEmail");
+  if (!email) {
+    alert("Session expired. Redirecting...");
+    return setTimeout(() => window.location.href = "login-tutor.html", 1500);
   }
 
-  async function updateTutorProfile() {
-    const email = document.getElementById("email").value;
-    const name = document.getElementById("name").value;
-    const bio = document.getElementById("bio").value;
-    const subjects = document.getElementById("subjects").value
-      .split(",")
-      .map(s => s.trim())
-      .filter(Boolean);
+  try {
+    const res = await auth.secureFetch(`/users/tutor?email=${encodeURIComponent(email)}`);
+    if (!res.ok) throw new Error(res.data?.message || "Failed to load");
 
-    try {
-      const res = await auth.secureFetch("/tutors/update", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, bio, subjects }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to update");
-
-      alert("✅ Profile updated successfully!");
-      loadTutorProfile();
-    } catch (err) {
-      alert("❌ Failed to update profile: " + err.message);
-    }
+    const data = res.data;
+    document.getElementById("name").value = data.name || "";
+    document.getElementById("email").value = data.email || "";
+    document.getElementById("bio").value = data.bio || "";
+    document.getElementById("subjects").value = (data.subjects || []).join(", ");
+  } catch (err) {
+    alert("❌ Failed to load profile: " + err.message);
+    setTimeout(() => window.location.href = "login-tutor.html", 1500);
   }
+}
+
+async function updateTutorProfile() {
+  const email = document.getElementById("email").value;
+  const name = document.getElementById("name").value;
+  const bio = document.getElementById("bio").value;
+  const subjects = document.getElementById("subjects").value
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  try {
+    const res = await auth.secureFetch("/tutors/update", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, name, bio, subjects }),
+    });
+
+    if (!res.ok) throw new Error(res.data?.message || "Failed to update");
+
+    alert("✅ Profile updated successfully!");
+    loadTutorProfile();
+  } catch (err) {
+    alert("❌ Failed to update profile: " + err.message);
+  }
+}
 
   document.addEventListener("DOMContentLoaded", () => {
     loadTutorProfile();

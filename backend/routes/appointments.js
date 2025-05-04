@@ -56,15 +56,32 @@ router.post("/book", async (req, res) => {
   }
 });
 
-// ✅ Mark completed and send review email
+// ✅ Mark completed by ID and send review email
 router.post("/complete/:id", async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
     if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
+    if (appointment.status === "completed") {
+      return res.status(200).json({ message: "Already marked as completed" });
+    }
+
     appointment.status = "completed";
     await appointment.save();
-
+    console.log(`✅ Marked completed: ${appointment._id}`);
+    
+      // Generate review tokens
+      const studentToken = jwt.sign(
+        { email: appointment.studentEmail },
+        process.env.JWT_REVIEW_SECRET,
+        { expiresIn: "2d" }
+      );
+      const tutorToken = jwt.sign(
+        { email: appointment.tutorEmail },
+        process.env.JWT_REVIEW_SECRET,
+        { expiresIn: "2d" }
+      );
+      
     const studentReviewHtml = generateReviewEmailHtml(
       appointment.tutorEmail,
       appointment.studentEmail,
@@ -85,6 +102,48 @@ router.post("/complete/:id", async (req, res) => {
   } catch (err) {
     console.error("❌ Error marking completed:", err.message);
     res.status(500).json({ message: "Failed to mark completed", error: err.message });
+  }
+});
+
+// ✅ Auto-complete past appointments without needing ID
+router.post("/auto-complete", async (req, res) => {
+  try {
+    const now = new Date();
+    const upcomingAppointments = await Appointment.find({ status: "upcoming" });
+    const completedAppointments = [];
+
+    for (const appt of upcomingAppointments) {
+      const sessionTime = new Date(`${appt.date}T${appt.time}`);
+      if (sessionTime < now) {
+        appt.status = "completed";
+        await appt.save();
+        completedAppointments.push(appt._id);
+
+        const studentReviewHtml = generateReviewEmailHtml(
+          appt.tutorEmail,
+          appt.studentEmail,
+          appt._id,
+          "student"
+        );
+        const tutorReviewHtml = generateReviewEmailHtml(
+          appt.tutorEmail,
+          appt.studentEmail,
+          appt._id,
+          "tutor"
+        );
+
+        await sendEmail(appt.studentEmail, "⭐ Rate Your Tutoring Session", studentReviewHtml);
+        await sendEmail(appt.tutorEmail, "⭐ Rate Your Tutoring Session", tutorReviewHtml);
+      }
+    }
+
+    res.json({
+      message: `✅ ${completedAppointments.length} appointments auto-marked as completed`,
+      ids: completedAppointments
+    });
+  } catch (err) {
+    console.error("❌ Auto-complete error:", err.message);
+    res.status(500).json({ message: "Auto-complete failed", error: err.message });
   }
 });
 

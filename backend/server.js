@@ -11,7 +11,6 @@ import path from "path";
 import fs from "fs";
 
 import Message from "./models/Messages.js";
-
 import authRoutes from "./routes/auth.js";
 import chatRoutes from "./routes/chat.js";
 import appointmentRoutes from "./routes/appointments.js";
@@ -31,27 +30,18 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
-// 🔌 Socket.io Setup
-const io = new Server(server, {
-  cors: { origin: "*" }
-});
-
-// 🧠 Track online users
 const onlineUsers = new Map();
 
-// 📦 Middleware
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
-
-// 🛡️ Optional Request Logger (for dev/debug)
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.url}`);
   next();
 });
 
-// ✅ Multer Storage Config for Uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = "uploads";
@@ -62,10 +52,9 @@ const storage = multer.diskStorage({
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
     cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-  }
+  },
 });
 
-// ✅ Dynamic Upload Route for Images and Files
 app.post("/api/chat/upload", (req, res, next) => {
   const field = req.headers["upload-type"] === "file" ? "file" : "image";
   const dynamicUpload = multer({ storage }).single(field);
@@ -79,8 +68,7 @@ app.post("/api/chat/upload", (req, res, next) => {
   });
 });
 
-// 📁 Routes
-app.use("/api/auth", authRoutes);         // 🔐 Includes OTP logic
+app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/appointment", appointmentRoutes);
 app.use("/api/payment", paymentRoutes);
@@ -90,24 +78,22 @@ app.use("/api/tutors", tutorRoutes);
 app.use("/api", payrollRoutes);
 app.use("/api/reviews", reviewRoutes);
 
-// ✅ Root Route
 app.get("/", (req, res) => {
   res.send("✅ EzPremium Tutors Backend is running!");
 });
 
-// 🌐 MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => {
-  console.log("✅ MongoDB connected");
-  server.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
-  startReminderCron();
-})
-.catch(err => console.error("❌ MongoDB connection error:", err.message));
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    server.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+    startReminderCron();
+  })
+  .catch((err) => console.error("❌ MongoDB connection error:", err.message));
 
-// 🔔 Cron Job to Send Session Reminders
 function startReminderCron() {
   cron.schedule("*/10 * * * *", async () => {
     console.log("⏰ Checking upcoming appointments...");
@@ -137,14 +123,11 @@ function startReminderCron() {
   });
 }
 
-// 📡 SOCKET.IO EVENTS
 io.on("connection", (socket) => {
   const userEmail = socket.handshake.query?.email;
 
   if (userEmail) {
-    if (!onlineUsers.has(userEmail)) {
-      onlineUsers.set(userEmail, new Set());
-    }
+    if (!onlineUsers.has(userEmail)) onlineUsers.set(userEmail, new Set());
     onlineUsers.get(userEmail).add(socket.id);
     io.emit("user-status", { email: userEmail, online: true });
     console.log(`🟢 ${userEmail} connected (${socket.id})`);
