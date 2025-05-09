@@ -146,8 +146,8 @@
     const notificationDropdown = document.getElementById("notification-dropdown");
 
     if (!studentName) {
-      welcomeSpan.textContent = "Session expired";
-      setTimeout(() => window.location.href = "login.html", 1500);
+      welcomeSpan.textContent = "Guest";
+      console.warn("⚠️ No student name found in localStorage. Staying on dashboard.");
     } else {
       welcomeSpan.textContent = `Welcome, ${studentName}!`;
     }
@@ -167,9 +167,16 @@
       if (!studentName) return;
 
       try {
-        const res = await auth.secureFetch(`/appointment/upcoming-student?studentName=${encodeURIComponent(studentName)}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message);
+        const res = await auth.secureFetch(`/appointment/upcoming-student?studentName=${encodeURIComponent(studentName)}`, {
+          noRedirect: true
+        });
+
+        if (!res || !res.ok) {
+          notificationDropdown.innerHTML = "<p>⚠️ Session expired or unauthorized.</p>";
+          return;
+        }
+
+        const data = res.data;
 
         notificationDropdown.innerHTML = "";
 
@@ -183,8 +190,7 @@
         });
       } catch (err) {
         console.error("Notification error:", err);
-        notificationDropdown.innerHTML = "<p>Session expired. Redirecting...</p>";
-        setTimeout(() => window.location.href = "login.html", 1500);
+        notificationDropdown.innerHTML = "<p>⚠️ Could not load notifications.</p>";
       }
     };
 

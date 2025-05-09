@@ -94,7 +94,6 @@
     const tutorEmail = params.get("tutorEmail");
     const studentEmail = params.get("studentEmail");
     const sessionId = params.get("sessionId");
-    const reviewToken = params.get("token");
 
     const form = document.getElementById("reviewForm");
     const message = document.getElementById("message");
@@ -103,6 +102,7 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       message.textContent = "";
+      message.style.color = "black";
       submitBtn.disabled = true;
 
       const rating = parseInt(document.getElementById("rating").value);
@@ -116,33 +116,16 @@
       }
 
       try {
-        const headers = { "Content-Type": "application/json" };
-        const body = {
-          tutorEmail,
-          studentEmail,
-          sessionId,
-          rating,
-          comment,
-        };
-
-        // Decide token source
-        if (reviewToken) {
-          body.token = reviewToken;
-          console.log("📩 Using review token from email link:", reviewToken);
-        } else {
-          const jwt = localStorage.getItem("token");
-          if (jwt) {
-            headers.Authorization = `Bearer ${jwt}`;
-            console.log("🔐 Using JWT token from localStorage");
-          } else {
-            console.warn("⚠️ No token provided at all.");
-          }
-        }
-
         const res = await fetch(`${BASE_API_URL}/reviews`, {
           method: "POST",
-          headers,
-          body: JSON.stringify(body),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tutorEmail,
+            studentEmail,
+            sessionId,
+            rating,
+            comment
+          })
         });
 
         const data = await res.json();
@@ -152,10 +135,9 @@
           message.style.color = "green";
           form.reset();
         } else {
-          message.textContent = `❌ ${data.message || "Failed to submit review"}`;
+          message.textContent = `❌ ${data.message || "Failed to submit review."}`;
           message.style.color = "red";
         }
-
       } catch (err) {
         console.error("❌ Review error:", err);
         message.textContent = "❌ Server error. Please try again later.";

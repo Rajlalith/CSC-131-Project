@@ -10,6 +10,8 @@ async function secureFetch(endpoint, options = {}) {
     "Content-Type": "application/json",
   };
 
+  const noRedirect = options.noRedirect || false;
+
   try {
     const res = await fetch(`${baseURL}${endpoint}`, {
       ...options,
@@ -17,19 +19,24 @@ async function secureFetch(endpoint, options = {}) {
     });
 
     if (res.status === 401) {
-      alert("Session expired. Redirecting to login...");
-      const role = localStorage.getItem("role");
-      localStorage.clear();
-      sessionStorage.clear();
+      console.warn("🔐 401 Unauthorized response");
 
-      if (role === "tutor") {
-        window.location.href = "login-tutor.html";
-      } else if (role === "admin") {
-        window.location.href = "login-admin.html";
-      } else {
-        window.location.href = "login.html";
+      if (!noRedirect) {
+        alert("Session expired. Redirecting to login...");
+        const role = localStorage.getItem("role");
+        localStorage.clear();
+        sessionStorage.clear();
+
+        if (role === "tutor") {
+          window.location.href = "login-tutor.html";
+        } else if (role === "admin") {
+          window.location.href = "login-admin.html";
+        } else {
+          window.location.href = "login.html";
+        }
       }
-      return;
+
+      return { ok: false, status: 401, data: null };
     }
 
     let data;
@@ -147,7 +154,7 @@ async function createTestUser() {
   return res.json();
 }
 
-// Export
+// Export all methods
 window.auth = {
   registerUser,
   loginUser,
