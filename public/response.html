@@ -143,24 +143,31 @@
 
   </form>
 
-  <script>
-    const form = document.getElementById("contactForm");
-    const popup = document.getElementById("successPopup");
+<script>
+  const form = document.getElementById("contactForm");
+  const popup = document.getElementById("successPopup");
 
-    form.addEventListener("submit", function(e) {
-      e.preventDefault(); // Stop normal form submit
+  form.addEventListener("submit", function (e) {
+    e.preventDefault(); // Stop normal form submit
 
-      // Show popup
-      popup.style.display = "block";
+    // Show popup
+    popup.style.display = "block";
 
-      // After 1.5 seconds, redirect
-      setTimeout(() => {
-        const params = new URLSearchParams(window.location.search);
-        const from = params.get("from") || "main";
-        window.location.href = `response.html?from=${from}`;
-      }, 1500);
-    });
-  </script>
+    // After 1.5 seconds, redirect based on URL param
+    setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get("from");
+
+      if (from === "student") {
+        window.location.href = "homepage-student.html";
+      } else if (from === "tutor") {
+        window.location.href = "homepage-tutor.html";
+      } else {
+        window.location.href = "index.html";
+      }
+    }, 1500);
+  });
+</script>
 
 </body>
 </html>

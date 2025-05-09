@@ -60,7 +60,7 @@
   </div>
 
   <!-- Dashboard title -->
-  <h1 style="color: white;">Tutor Dashboard</h1>
+  <h1 style="color: white;" id="welcome-tutor">Tutor Dashboard</h1>
 
   <!-- Dashboard Grid -->
   <div class="grid">
@@ -93,10 +93,11 @@
   <script>
     const notificationDropdown = document.getElementById("notification-dropdown");
     const tutorEmail = localStorage.getItem("userEmail");
+    const welcomeHeader = document.getElementById("welcome-tutor");
 
     if (!tutorEmail) {
-      notificationDropdown.innerHTML = "<p>Session expired. Redirecting...</p>";
-      setTimeout(() => window.location.href = "login-tutor.html", 1500);
+      console.warn("⚠️ No tutor email found in localStorage.");
+      welcomeHeader.textContent = "Tutor Dashboard (Guest)";
     }
 
     const toggleNotifications = () => {
@@ -111,14 +112,22 @@
     };
 
     const fetchNotifications = async () => {
-      try {
-        const res = await auth.secureFetch(`/appointment/upcoming?tutorEmail=${encodeURIComponent(tutorEmail)}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message);
+      if (!tutorEmail) return;
 
+      try {
+        const res = await auth.secureFetch(`/appointment/upcoming?tutorEmail=${encodeURIComponent(tutorEmail)}`, {
+          noRedirect: true
+        });
+
+        if (!res || !res.ok) {
+          notificationDropdown.innerHTML = "<p>⚠️ Session expired or unauthorized.</p>";
+          return;
+        }
+
+        const data = res.data;
         notificationDropdown.innerHTML = "";
 
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
           notificationDropdown.innerHTML = "<p>No upcoming appointments</p>";
           return;
         }
@@ -129,15 +138,14 @@
 
       } catch (err) {
         console.error("Notification error:", err);
-        notificationDropdown.innerHTML = "<p>Session expired. Redirecting...</p>";
-        setTimeout(() => window.location.href = "login-tutor.html", 1500);
+        notificationDropdown.innerHTML = "<p>⚠️ Could not load notifications.</p>";
       }
     };
 
     fetchNotifications();
 
     function tutorLogout() {
-      logoutUser(); // defined in logout.js
+      logoutUser(); // from logout.js
     }
   </script>
 

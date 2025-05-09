@@ -139,20 +139,25 @@
     <div id="successPopup" class="popup">✅ Submitted Successfully!</div>
   </form>
 
-  <script>
-    document.getElementById("contactForm").addEventListener("submit", function(e) {
-      e.preventDefault();
+<script>
+  document.getElementById("contactForm").addEventListener("submit", function(e) {
+    e.preventDefault();
 
-      const popup = document.getElementById("successPopup");
-      popup.style.display = "block";
+    const popup = document.getElementById("successPopup");
+    popup.style.display = "block";
 
-      setTimeout(() => {
-        const params = new URLSearchParams(window.location.search);
-        const from = params.get("from") || "main";
-        window.location.href = `response.html?from=${from}`;
-      }, 1500); // 1.5 sec before redirect
-    });
-  </script>
+    setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get("from") || "main";
+
+      let redirectTo = "index.html";
+      if (from === "student") redirectTo = "homepage-student.html";
+      else if (from === "tutor") redirectTo = "homepage-tutor.html";
+
+      window.location.href = redirectTo;
+    }, 1500); // 1.5 sec before redirect
+  });
+</script>
 
 </body>
 </html>
